@@ -20,7 +20,9 @@ export class LobbyUI {
       selectedWeapon: 'pulse_rifle',
       settings: {
         sensitivity: 1.0,
-        perspective: 'third_person_behind'
+        perspective: 'third_person_behind',
+        brightness: 1000,
+        graphics: 'auto'
       }
     };
 
@@ -48,6 +50,7 @@ export class LobbyUI {
     this.sensitivityInput = document.getElementById('setting-sensitivity');
     this.sensitivityVal = document.getElementById('setting-sensitivity-val');
     this.perspectiveOptions = document.querySelectorAll('.perspective-option');
+    this.graphicsOptions = document.querySelectorAll('.graphics-option');
 
     // 1. Initialize the 3D turntable scene
     this.previewScene = new LobbyPreviewScene(this.previewCanvas);
@@ -128,12 +131,34 @@ export class LobbyUI {
       });
     });
 
-    // Settings: Weather dropdown listener
-    const weatherInput = document.getElementById('setting-weather');
-    if (weatherInput) {
-      this.state.settings.weather = 'dynamic'; // initial default
-      weatherInput.addEventListener('change', (e) => {
-        this.state.settings.weather = e.target.value;
+    // Settings: Brightness slider listener
+    const brightnessInput = document.getElementById('setting-brightness');
+    const brightnessVal = document.getElementById('setting-brightness-val');
+    if (brightnessInput && brightnessVal) {
+      brightnessInput.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        brightnessVal.innerText = val;
+        this.state.settings.brightness = val;
+        // Apply brightness to rotating operator turntable live
+        if (this.previewScene) {
+          this.previewScene.setBrightness(val);
+        }
+      });
+    }
+
+    // Settings: Graphics Quality toggle buttons
+    if (this.graphicsOptions) {
+      this.graphicsOptions.forEach((option) => {
+        option.addEventListener('click', () => {
+          this.graphicsOptions.forEach((opt) => opt.classList.remove('active'));
+          option.classList.add('active');
+
+          const radio = option.querySelector('input[type="radio"]');
+          if (radio) {
+            radio.checked = true;
+            this.state.settings.graphics = radio.value;
+          }
+        });
       });
     }
 

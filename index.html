@@ -818,8 +818,8 @@
       background: var(--accent-tactical);
     }
 
-    /* Settings perspective options active state */
-    .perspective-option.active {
+    /* Settings perspective and graphics options active state */
+    .perspective-option.active, .graphics-option.active {
       border-color: var(--accent-tactical) !important;
       background: rgba(249, 115, 22, 0.15) !important;
       color: var(--accent-tactical) !important;
@@ -828,6 +828,203 @@
     #lobby-settings-btn:hover, #hud-pov-btn:hover, #hud-settings-btn:hover {
       background: rgba(249, 115, 22, 0.15) !important;
       border-color: var(--accent-tactical) !important;
+    }
+
+    /* Mobile Touch Controls CSS */
+    #mobile-touch-hud {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 8;
+      display: none;
+    }
+
+    #touch-joystick-container {
+      position: absolute;
+      bottom: 50px;
+      left: 50px;
+      width: 120px;
+      height: 120px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 2px solid rgba(255, 255, 255, 0.25);
+      border-radius: 50%;
+      pointer-events: auto;
+      touch-action: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    #joystick-thumb {
+      width: 50px;
+      height: 50px;
+      background: rgba(249, 115, 22, 0.6);
+      border: 2px solid #66fcf1; /* cyber turquoise */
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    #touch-look-zone {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 60%;
+      height: 100%;
+      pointer-events: auto;
+      touch-action: none;
+    }
+
+    #touch-fire-btn {
+      position: absolute;
+      bottom: 50px;
+      right: 50px;
+      width: 80px;
+      height: 80px;
+      background: radial-gradient(circle, rgba(234, 88, 12, 0.8) 0%, rgba(249, 115, 22, 0.4) 100%);
+      border: 3px solid var(--accent-tactical);
+      border-radius: 50%;
+      pointer-events: auto;
+      touch-action: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(234, 88, 12, 0.4);
+      color: #fff;
+      font-size: 1.8rem;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+      user-select: none;
+    }
+
+    #touch-fire-btn:active {
+      transform: scale(0.92);
+      background: radial-gradient(circle, rgba(234, 88, 12, 0.95) 0%, rgba(249, 115, 22, 0.6) 100%);
+    }
+
+    #touch-weapon-switch {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 12px;
+      pointer-events: auto;
+      z-index: 10;
+    }
+
+    .touch-weapon-btn {
+      width: 54px;
+      height: 54px;
+      background: rgba(13, 17, 24, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      color: #fff;
+      font-size: 1.2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      pointer-events: auto;
+      touch-action: none;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+      transition: all 0.2s;
+    }
+
+    .touch-weapon-btn.active {
+      border-color: var(--accent-tactical) !important;
+      background: rgba(249, 115, 22, 0.2) !important;
+      box-shadow: 0 0 8px rgba(249, 115, 22, 0.4) !important;
+    }
+
+    .touch-weapon-btn .weapon-label {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.5rem;
+      font-weight: 800;
+      margin-top: 3px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .touch-weapon-btn.active .weapon-label {
+      color: var(--accent-tactical);
+    }
+
+    #touch-pov-btn {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(13, 17, 24, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 1.3rem;
+      cursor: pointer;
+      pointer-events: auto;
+      touch-action: none;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+      z-index: 10;
+    }
+
+    /* Media queries for responsiveness */
+    @media (max-width: 1024px) {
+      /* Stack Lobby Screen vertically */
+      #lobby-screen {
+        flex-direction: column !important;
+        overflow-y: auto !important;
+      }
+      
+      .lobby-preview-container {
+        width: 100% !important;
+        height: 40vh !important;
+        flex-shrink: 0;
+        border-right: none !important;
+        border-bottom: 2px solid var(--panel-border);
+      }
+      
+      .lobby-dashboard {
+        width: 100% !important;
+        height: auto !important;
+        overflow-y: visible !important;
+        padding: 20px !important;
+      }
+
+      /* Stack control panels if they overlap */
+      .panel-container {
+        height: auto !important;
+      }
+
+      /* Reposition HUD for mobile view to prevent overlaps */
+      #hud-health-container {
+        bottom: auto !important;
+        top: 20px !important;
+        left: 20px !important;
+        width: 160px !important;
+      }
+
+      #hud-score-container {
+        top: 20px !important;
+        left: 200px !important;
+      }
+
+      #hud-controls-container {
+        top: 20px !important;
+        right: 20px !important;
+        left: auto !important;
+      }
+
+      #hud-weapon-container {
+        display: none !important; /* Hide original weapon container */
+      }
     }
   </style>
 </head>
@@ -1091,6 +1288,27 @@
       <button id="hud-pov-btn" style="background: rgba(18, 22, 28, 0.85); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 4px; padding: 6px 12px; color: #fff; font-family: 'Orbitron'; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;">🎥 3RD OTS</button>
       <button id="hud-settings-btn" style="background: rgba(18, 22, 28, 0.85); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 4px; padding: 6px 12px; color: #fff; font-family: 'Orbitron'; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;">⚙️ SETTINGS</button>
     </div>
+
+    <!-- Mobile Touch HUD Overlay -->
+    <div id="mobile-touch-hud">
+      <!-- Joystick Container -->
+      <div id="touch-joystick-container">
+        <div id="joystick-thumb"></div>
+      </div>
+      <!-- Swipe-to-Look Drag Zone -->
+      <div id="touch-look-zone"></div>
+      
+      <!-- Fire Button -->
+      <div id="touch-fire-btn">🔥</div>
+      
+      <!-- Weapon Switch Container -->
+      <div id="touch-weapon-switch">
+        <div class="touch-weapon-btn active">🔫<span class="weapon-label" id="touch-weapon-label">NXT</span></div>
+      </div>
+      
+      <!-- POV Switch Button -->
+      <div id="touch-pov-btn">🎥</div>
+    </div>
   </div>
 
   <!-- Settings Modal (Lobby & In-Game) -->
@@ -1126,16 +1344,36 @@
             </label>
           </div>
         </div>
-        
-        <!-- Realtime Weather Selector -->
+        <!-- Brightness Slider -->
         <div>
-          <label for="setting-weather" style="display: block; font-size: 0.75rem; font-weight: 800; margin-bottom: 6px; color: var(--accent-tactical);">Weather Environment</label>
-          <select id="setting-weather" style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; padding: 10px; color: #fff; font-family: 'Orbitron'; font-size: 0.8rem; cursor: pointer; outline: none; box-sizing: border-box;">
-            <option value="dynamic">Dynamic (Realtime Cycle)</option>
-            <option value="sunny">Sunny / Daylight</option>
-            <option value="cloudy">Cloudy / Foggy</option>
-            <option value="stormy">Stormy (Rain & Lightning)</option>
-          </select>
+          <label for="setting-brightness" style="display: block; font-size: 0.75rem; font-weight: 800; margin-bottom: 6px; color: var(--accent-tactical);">Screen Brightness</label>
+          <div style="display: flex; align-items: center; gap: 15px;">
+            <input type="range" id="setting-brightness" min="10" max="2000" step="10" value="1000" style="flex-grow: 1; accent-color: var(--accent-tactical); cursor: pointer;">
+            <span id="setting-brightness-val" style="font-family: 'Orbitron'; font-weight: 700; width: 45px; text-align: right;">1000</span>
+          </div>
+        </div>
+
+        <!-- Graphics Quality -->
+        <div>
+          <label style="display: block; font-size: 0.75rem; font-weight: 800; margin-bottom: 8px; color: var(--accent-tactical);">Graphics Quality (Requires restart)</label>
+          <div style="display: flex; gap: 10px; width: 100%;">
+            <label style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;" class="graphics-option active">
+              <input type="radio" name="graphics-select" value="auto" checked style="display:none;">
+              AUTO
+            </label>
+            <label style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;" class="graphics-option">
+              <input type="radio" name="graphics-select" value="low" style="display:none;">
+              LOW
+            </label>
+            <label style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;" class="graphics-option">
+              <input type="radio" name="graphics-select" value="medium" style="display:none;">
+              MED
+            </label>
+            <label style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;" class="graphics-option">
+              <input type="radio" name="graphics-select" value="high" style="display:none;">
+              HIGH
+            </label>
+          </div>
         </div>
       </div>
       

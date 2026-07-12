@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CharacterModel } from '../entities/CharacterModel.js';
+import { Sky } from 'three/addons/objects/Sky.js';
 
 // --- Procedural Terrain & Scenery Helpers ---
 
@@ -7,7 +8,7 @@ function getTerrainHeight(x, z) {
   const h1 = Math.sin(x * 0.05) * Math.cos(z * 0.05) * 2.5; // Large hills
   const h2 = Math.sin(x * 0.15 + 1.0) * Math.sin(z * 0.12) * 0.8; // Medium bumps
   const h3 = Math.cos(x * 0.3) * Math.cos(z * 0.3) * 0.2; // Fine detail
-  
+
   // Flatten spawn area (radius 15)
   const dist = Math.sqrt(x * x + z * z);
   if (dist < 15) {
@@ -33,7 +34,7 @@ function createGrassTexture() {
     const y = Math.random() * 512;
     const radius = 2 + Math.random() * 8;
     const grad = ctx.createRadialGradient(x, y, 0, x, y, radius);
-    
+
     const type = Math.random();
     if (type < 0.4) {
       grad.addColorStop(0, 'rgba(43, 62, 33, 0.4)');
@@ -87,7 +88,7 @@ function createGrassTexture() {
 
 function create3DBroadleafTree(width, height, radius) {
   const group = new THREE.Group();
-  
+
   const trunkHeight = height * 0.35;
   const trunkGeo = new THREE.CylinderGeometry(radius * 0.6, radius * 1.0, trunkHeight, 8);
   trunkGeo.translate(0, trunkHeight / 2, 0);
@@ -100,13 +101,13 @@ function create3DBroadleafTree(width, height, radius) {
   trunk.castShadow = true;
   trunk.receiveShadow = true;
   group.add(trunk);
-  
+
   const foliageMat = new THREE.MeshStandardMaterial({
     color: 0x1e5631,
     roughness: 0.95,
     flatShading: true
   });
-  
+
   const f1Geo = new THREE.DodecahedronGeometry(radius * 3.5, 1);
   const f1 = new THREE.Mesh(f1Geo, foliageMat);
   f1.position.set(0, trunkHeight + radius * 1.5, 0);
@@ -127,13 +128,13 @@ function create3DBroadleafTree(width, height, radius) {
   f3.castShadow = true;
   f3.receiveShadow = true;
   group.add(f3);
-  
+
   return group;
 }
 
 function create3DPineTree(width, height, radius) {
   const group = new THREE.Group();
-  
+
   const trunkHeight = height * 0.25;
   const trunkGeo = new THREE.CylinderGeometry(radius * 0.5, radius * 0.8, trunkHeight, 8);
   trunkGeo.translate(0, trunkHeight / 2, 0);
@@ -146,58 +147,58 @@ function create3DPineTree(width, height, radius) {
   trunk.castShadow = true;
   trunk.receiveShadow = true;
   group.add(trunk);
-  
+
   const foliageMat = new THREE.MeshStandardMaterial({
     color: 0x0f3817,
     roughness: 0.95,
     flatShading: true
   });
-  
+
   const cone1Geo = new THREE.ConeGeometry(radius * 3.6, height * 0.45, 6);
   const cone1 = new THREE.Mesh(cone1Geo, foliageMat);
   cone1.position.set(0, trunkHeight + height * 0.2, 0);
   cone1.castShadow = true;
   cone1.receiveShadow = true;
   group.add(cone1);
-  
+
   const cone2Geo = new THREE.ConeGeometry(radius * 2.8, height * 0.36, 6);
   const cone2 = new THREE.Mesh(cone2Geo, foliageMat);
   cone2.position.set(0, trunkHeight + height * 0.42, 0);
   cone2.castShadow = true;
   cone2.receiveShadow = true;
   group.add(cone2);
-  
+
   const cone3Geo = new THREE.ConeGeometry(radius * 2.0, height * 0.28, 6);
   const cone3 = new THREE.Mesh(cone3Geo, foliageMat);
   cone3.position.set(0, trunkHeight + height * 0.6, 0);
   cone3.castShadow = true;
   cone3.receiveShadow = true;
   group.add(cone3);
-  
+
   return group;
 }
 
 function create3DStone(width, height, radius) {
   const stoneGeo = new THREE.DodecahedronGeometry(radius, 1);
   const pos = stoneGeo.attributes.position;
-  
+
   for (let i = 0; i < pos.count; i++) {
     const vx = pos.getX(i);
     const vy = pos.getY(i);
     const vz = pos.getZ(i);
-    
+
     pos.setX(i, vx + (Math.sin(vx * 10) * 0.08) * radius);
     pos.setY(i, vy + (Math.cos(vy * 10) * 0.08) * radius);
     pos.setZ(i, vz + (Math.sin(vz * 10) * 0.08) * radius);
   }
-  
+
   stoneGeo.translate(0, radius * 0.8, 0);
   stoneGeo.computeVertexNormals();
-  
+
   const stoneColors = [];
   const tempNormal = new THREE.Vector3();
   const normalAttr = stoneGeo.attributes.normal;
-  
+
   for (let i = 0; i < pos.count; i++) {
     tempNormal.fromBufferAttribute(normalAttr, i);
     const color = new THREE.Color(0x334155);
@@ -207,23 +208,23 @@ function create3DStone(width, height, radius) {
     stoneColors.push(color.r, color.g, color.b);
   }
   stoneGeo.setAttribute('color', new THREE.Float32BufferAttribute(stoneColors, 3));
-  
+
   const stoneMat = new THREE.MeshStandardMaterial({
     vertexColors: true,
     roughness: 0.85,
     metalness: 0.1,
     flatShading: true
   });
-  
+
   const mesh = new THREE.Mesh(stoneGeo, stoneMat);
   mesh.castShadow = true;
   mesh.receiveShadow = true;
-  
+
   const sx = 0.9 + Math.random() * 0.4;
   const sy = 0.7 + Math.random() * 0.5;
   const sz = 0.9 + Math.random() * 0.4;
   mesh.scale.set(sx, sy, sz);
-  
+
   return mesh;
 }
 
@@ -235,10 +236,10 @@ function create3DGrassClump() {
     roughness: 0.9,
     flatShading: true
   });
-  
+
   const geo = new THREE.PlaneGeometry(0.3 + Math.random() * 0.3, 0.4 + Math.random() * 0.4);
   geo.translate(0, geo.parameters.height / 2, 0);
-  
+
   for (let i = 0; i < 3; i++) {
     const mesh = new THREE.Mesh(geo, grassMat);
     mesh.rotation.y = (i * Math.PI) / 3 + (Math.random() - 0.5) * 0.2;
@@ -587,31 +588,44 @@ export class MatchScene {
     this.cameraMode = (setupParams.settings && setupParams.settings.perspective) ? setupParams.settings.perspective : 'third_person_behind';
     this.sensitivityMultiplier = (setupParams.settings && setupParams.settings.sensitivity !== undefined) ? setupParams.settings.sensitivity : 1.0;
 
-    // Weather & Sky settings
-    this.weatherSetting = setupParams.settings ? setupParams.settings.weather || 'dynamic' : 'dynamic';
-    this.currentWeather = 'sunny';
-    this.weatherTimer = 0;
-    this.weatherDuration = 30.0; // seconds per weather cycle state
-    this.targetSkyColor = new THREE.Color(0x0a0c10);
-    this.targetFogColor = new THREE.Color(0x0e1117);
-    this.targetFogDensity = 0.012;
-    this.targetSunIntensity = 1.3;
-    this.targetSunColor = new THREE.Color(0xffedd5);
-    this.lightningFlash = 0.0;
-    this.lastLightningStrikeTime = 0;
-    this.lightningBoltMesh = null;
-    this.lightningLight = null;
+    this.brightnessVal = (setupParams.settings && setupParams.settings.brightness !== undefined) ? setupParams.settings.brightness : 1000;
+
+    // Graphics Scalability Engine
+    this.isMobile = window.innerWidth < 1024;
+    let quality = (setupParams.settings && setupParams.settings.graphics) ? setupParams.settings.graphics : 'auto';
+    if (quality === 'auto') quality = this.isMobile ? 'low' : 'high';
+    this.graphicsQuality = quality;
+
+    if (quality === 'low') {
+      this.pixelRatio = 1.0;
+      this.shadowMapRes = 1024;
+      this.terrainSegments = 20;
+      this.sceneryCount = 80;
+    } else if (quality === 'medium') {
+      this.pixelRatio = Math.min(window.devicePixelRatio, 1.5);
+      this.shadowMapRes = 2048;
+      this.terrainSegments = 50;
+      this.sceneryCount = 180;
+    } else {
+      this.pixelRatio = Math.min(window.devicePixelRatio, 2.0);
+      this.shadowMapRes = 4096;
+      this.terrainSegments = 80;
+      this.sceneryCount = 300;
+    }
+
+    this.joystickActive = false;
+    this.joystickVector = new THREE.Vector2(0, 0); // (x: left/right, y: forward/backward)
 
     // Input state
     this.keys = { w: false, a: false, s: false, d: false };
     this.isPointerLocked = false;
-    
+
     // Weapon cooldown tracking
     this.lastFireTime = 0;
     this.weaponConfigs = {
-      pulse_rifle: { name: 'Tactical Rifle', damage: 15, fireRate: 0.15, range: 60, color: 0x06b6d4, spread: 0.02 },
-      plasma_pistol: { name: 'Combat Pistol', damage: 25, fireRate: 0.4, range: 40, color: 0xfabb3c, spread: 0.01 },
-      void_shotgun: { name: 'Combat Shotgun', damage: 10, fireRate: 0.9, range: 20, color: 0xef4444, spread: 0.08, pellets: 6 }
+      pulse_rifle: { name: 'Tactical Rifle', damage: 15, fireRate: 0.15, range: 60, color: 0x06b6d4, spread: 0.02, automatic: true },
+      plasma_pistol: { name: 'Combat Pistol', damage: 25, fireRate: 0.4, range: 40, color: 0xfabb3c, spread: 0.01, automatic: false },
+      void_shotgun: { name: 'Combat Shotgun', damage: 10, fireRate: 0.9, range: 20, color: 0xef4444, spread: 0.08, pellets: 6, automatic: false }
     };
 
     // Arrays to hold entities and scenery
@@ -634,7 +648,7 @@ export class MatchScene {
     this.initEnvironment();
     this.spawnEntities();
     this.initControls();
-    
+
     // Set initial camera mode
     this.setCameraMode(this.cameraMode);
 
@@ -645,15 +659,40 @@ export class MatchScene {
     this.start();
   }
 
+
+  getTerrainHeight(x, z) {
+    let height = Math.sin(x * 0.05) * Math.cos(z * 0.05) * 2.0;
+    height += Math.sin(x * 0.02) * Math.cos(z * 0.025) * 4.0;
+    const distFromCenter = Math.sqrt(x * x + z * z);
+    if (distFromCenter < 20) {
+      height *= (distFromCenter / 20); // ease into hills from spawn
+    }
+    return height;
+  }
+
   /**
    * Setup WebGL Renderer, Scene, Camera, and Fog.
    */
   initEngine() {
     this.scene = new THREE.Scene();
-    
+
     // Soft sky-blue fog and background
-    this.scene.background = new THREE.Color(0x0a0c10); 
-    this.scene.fog = new THREE.FogExp2(0x0e1117, 0.012); 
+
+    // Realistic Sky
+    this.sky = new Sky();
+    this.sky.scale.setScalar(450000);
+    this.scene.add(this.sky);
+
+    this.sunPosition = new THREE.Vector3();
+
+    const skyUniforms = this.sky.material.uniforms;
+    skyUniforms['turbidity'].value = 10;
+    skyUniforms['rayleigh'].value = 2;
+    skyUniforms['mieCoefficient'].value = 0.005;
+    skyUniforms['mieDirectionalG'].value = 0.8;
+
+    this.scene.fog = new THREE.FogExp2(0xa5f3fc, 0.0035);
+
 
     this.camera = new THREE.PerspectiveCamera(
       65,
@@ -668,7 +707,7 @@ export class MatchScene {
       powerPreference: 'high-performance'
     });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(this.pixelRatio);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -676,20 +715,19 @@ export class MatchScene {
     window.addEventListener('resize', this.resizeHandler);
   }
 
-  /**
-   * Outdoor lighting: Sun + Ambient fill.
-   */
   initLights() {
-    const ambientLight = new THREE.AmbientLight(0x38475e, 1.4);
-    this.scene.add(ambientLight);
+    const mult = this.brightnessVal / 1000;
 
-    this.sunLight = new THREE.DirectionalLight(0xffedd5, 2.2);
+    this.ambientLight = new THREE.AmbientLight(0xf1f5f9, 1.8 * mult);
+    this.scene.add(this.ambientLight);
+
+    this.sunLight = new THREE.DirectionalLight(0xffffff, 3.0 * mult);
     this.sunLight.position.set(40, 80, 40);
     this.sunLight.castShadow = true;
-    
+
     // Setup clean shadows for large map
-    this.sunLight.shadow.mapSize.width = 2048;
-    this.sunLight.shadow.mapSize.height = 2048;
+    this.sunLight.shadow.mapSize.width = this.shadowMapRes;
+    this.sunLight.shadow.mapSize.height = this.shadowMapRes;
     this.sunLight.shadow.camera.near = 0.5;
     this.sunLight.shadow.camera.far = 200;
     this.sunLight.shadow.camera.left = -60;
@@ -698,6 +736,17 @@ export class MatchScene {
     this.sunLight.shadow.camera.bottom = -60;
     this.sunLight.shadow.bias = -0.0005;
     this.scene.add(this.sunLight);
+
+    // Sync Sky with Sun position based on brightness
+    const elevation = 2 + (this.brightnessVal / 2000) * 88; // 2 to 90 degrees
+    const azimuth = 180;
+    const phi = THREE.MathUtils.degToRad(90 - elevation);
+    const theta = THREE.MathUtils.degToRad(azimuth);
+    this.sunPosition.setFromSphericalCoords(1, phi, theta);
+
+    this.sky.material.uniforms['sunPosition'].value.copy(this.sunPosition);
+    this.sunLight.position.copy(this.sunPosition).multiplyScalar(100);
+
   }
 
   /**
@@ -709,7 +758,7 @@ export class MatchScene {
     leafCanvas.width = 256;
     leafCanvas.height = 512;
     let ctx = leafCanvas.getContext('2d');
-    
+
     // Trunk
     ctx.fillStyle = '#3e2723';
     ctx.beginPath();
@@ -755,7 +804,7 @@ export class MatchScene {
     pineCanvas.width = 256;
     pineCanvas.height = 512;
     ctx = pineCanvas.getContext('2d');
-    
+
     // Trunk
     ctx.fillStyle = '#2d1a10';
     ctx.fillRect(116, 360, 24, 152);
@@ -856,7 +905,7 @@ export class MatchScene {
     // 1. Terrain Ground plane scaled to 200x200 with 100x100 segments
     const groundGeo = new THREE.PlaneGeometry(220, 220, 100, 100);
     const count = groundGeo.attributes.position.count;
-    
+
     // Apply displacement height map to vertices
     const posAttr = groundGeo.attributes.position;
     for (let i = 0; i < count; i++) {
@@ -868,8 +917,18 @@ export class MatchScene {
     groundGeo.computeVertexNormals();
 
     const colors = [];
+
+    // Displace vertices to create rolling hills
+    const pos = groundGeo.attributes.position;
+    for (let i = 0; i < count; i++) {
+      const vx = pos.getX(i);
+      const vy = pos.getY(i);
+      pos.setZ(i, this.getTerrainHeight(vx, vy));
+    }
+    groundGeo.computeVertexNormals();
+
     const color = new THREE.Color();
-    
+
     for (let i = 0; i < count; i++) {
       // Dark army tactical ground: dark greens and charcoal earth tones
       const mix = Math.random();
@@ -877,9 +936,9 @@ export class MatchScene {
       color.lerp(new THREE.Color(0x13171f), mix * 0.55); // Mix with dark slate grey
       colors.push(color.r, color.g, color.b);
     }
-    
+
     groundGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-    
+
     const grassTex = createGrassTexture();
     const groundMat = new THREE.MeshStandardMaterial({
       map: grassTex,
@@ -887,7 +946,7 @@ export class MatchScene {
       roughness: 0.9,
       metalness: 0.05
     });
-    
+
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
@@ -898,7 +957,7 @@ export class MatchScene {
     for (let i = 0; i < sceneryCount; i++) {
       let x = (Math.random() - 0.5) * 190;
       let z = (Math.random() - 0.5) * 190;
-      
+
       // Prevent spawning near player start center
       const distToCenter = Math.sqrt(x * x + z * z);
       if (distToCenter < 12) {
@@ -937,7 +996,7 @@ export class MatchScene {
       // Give random rotation around Y for natural look
       mesh.rotation.y = Math.random() * Math.PI * 2;
       this.scene.add(mesh);
-      
+
       this.scenery.push({
         mesh: mesh,
         x: x,
@@ -955,15 +1014,15 @@ export class MatchScene {
       const x = (Math.random() - 0.5) * 190;
       const z = (Math.random() - 0.5) * 190;
       if (Math.sqrt(x * x + z * z) < 8) continue;
-      
+
       const grass = create3DGrassClump();
       const y = getTerrainHeight(x, z);
       grass.position.set(x, y, z);
-      
+
       const s = 0.75 + Math.random() * 0.5;
       grass.scale.set(s, s, s);
       grass.rotation.y = Math.random() * Math.PI * 2;
-      
+
       this.scene.add(grass);
       this.scenery.push({
         mesh: grass,
@@ -978,25 +1037,25 @@ export class MatchScene {
     // 2c. Place landmark buildings at fixed positions around the map
     const buildingDefs = [
       // Huts scattered throughout
-      { fn: createHut,             x:  22,  z:  18 },
-      { fn: createHut,             x: -35,  z:  12 },
-      { fn: createHut,             x:  55,  z: -30 },
-      { fn: createHut,             x: -60,  z: -50 },
-      { fn: createHut,             x:  15,  z:  70 },
-      { fn: createHut,             x: -20,  z: -80 },
+      { fn: createHut, x: 22, z: 18 },
+      { fn: createHut, x: -35, z: 12 },
+      { fn: createHut, x: 55, z: -30 },
+      { fn: createHut, x: -60, z: -50 },
+      { fn: createHut, x: 15, z: 70 },
+      { fn: createHut, x: -20, z: -80 },
       // Abandoned houses
-      { fn: createAbandonedHouse,  x: -50,  z:  40 },
-      { fn: createAbandonedHouse,  x:  65,  z:  20 },
-      { fn: createAbandonedHouse,  x:  30,  z: -55 },
-      { fn: createAbandonedHouse,  x: -75,  z: -20 },
+      { fn: createAbandonedHouse, x: -50, z: 40 },
+      { fn: createAbandonedHouse, x: 65, z: 20 },
+      { fn: createAbandonedHouse, x: 30, z: -55 },
+      { fn: createAbandonedHouse, x: -75, z: -20 },
       // Abandoned school – only 1 (big)
-      { fn: createAbandonedSchool, x:  -5,  z:  60 },
+      { fn: createAbandonedSchool, x: -5, z: 60 },
       // Abandoned hospital – only 1 (tallest)
-      { fn: createAbandonedHospital, x: 80,  z: -60 },
+      { fn: createAbandonedHospital, x: 80, z: -60 },
       // Cell phone towers at corners/edges
-      { fn: createCellPhoneTower,  x:  85,  z:  85 },
-      { fn: createCellPhoneTower,  x: -85,  z:  75 },
-      { fn: createCellPhoneTower,  x:  70,  z: -85 },
+      { fn: createCellPhoneTower, x: 85, z: 85 },
+      { fn: createCellPhoneTower, x: -85, z: 75 },
+      { fn: createCellPhoneTower, x: 70, z: -85 },
     ];
 
     buildingDefs.forEach(({ fn, x, z }) => {
@@ -1035,16 +1094,16 @@ export class MatchScene {
     const rainCount = 1500;
     const rainGeo = new THREE.BufferGeometry();
     const rainPositions = new Float32Array(rainCount * 3);
-    
+
     // Distribute rain randomly within a 40x20x40 box
     for (let i = 0; i < rainCount * 3; i += 3) {
       rainPositions[i] = (Math.random() - 0.5) * 40;     // x
       rainPositions[i + 1] = Math.random() * 20;         // y
       rainPositions[i + 2] = (Math.random() - 0.5) * 40; // z
     }
-    
+
     rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
-    
+
     const rainMat = new THREE.PointsMaterial({
       color: 0x93c5fd, // translucent blue-white
       size: 0.08,
@@ -1052,7 +1111,7 @@ export class MatchScene {
       opacity: 0.5,
       depthWrite: false
     });
-    
+
     this.rainParticles = new THREE.Points(rainGeo, rainMat);
     this.rainParticles.visible = false; // start hidden
     this.scene.add(this.rainParticles);
@@ -1063,7 +1122,7 @@ export class MatchScene {
    */
   spawnEntities() {
     // 1. Spawning Player
-    let outfitColor = 0xc5a880; 
+    let outfitColor = 0xc5a880;
     if (this.selectedOutfit === 'orange') {
       outfitColor = 0x3e5634; // Green
     } else if (this.selectedOutfit === 'green') {
@@ -1078,7 +1137,7 @@ export class MatchScene {
     const playerSpawnY = getTerrainHeight(0, 0);
     this.playerCharacter.position.set(0, playerSpawnY, 0);
     this.playerPos.set(0, playerSpawnY, 0);
-    
+
     this.playerCharacter.traverse((child) => {
       if (child.isMesh) {
         child.castShadow = true;
@@ -1137,9 +1196,15 @@ export class MatchScene {
    * Initialize keyboard/mouse controls and Pointer Lock API.
    */
   initControls() {
-    // Show blocker initially to prompt user click
-    if (this.blocker) {
-      this.blocker.style.display = 'flex';
+    // Show blocker initially to prompt user click (unless on mobile)
+    if (this.isMobile) {
+      const touchHud = document.getElementById('mobile-touch-hud');
+      if (touchHud) touchHud.style.display = 'block';
+      if (this.blocker) this.blocker.style.display = 'none';
+    } else {
+      if (this.blocker) {
+        this.blocker.style.display = 'flex';
+      }
     }
 
     // Key listeners (WASD + Arrows)
@@ -1181,6 +1246,7 @@ export class MatchScene {
 
     // Pointer lock binding (bind to both blocker and canvas to catch click events)
     const requestLock = () => {
+      if (this.isMobile) return;
       // Avoid locking cursor if settings menu overlay is displayed
       const isSettingsOpen = settingsModal && settingsModal.style.display === 'flex';
       if (!this.isPointerLocked && !isSettingsOpen) {
@@ -1194,6 +1260,7 @@ export class MatchScene {
     }
 
     document.addEventListener('pointerlockchange', () => {
+      if (this.isMobile) return;
       if (document.pointerLockElement === this.canvas) {
         this.isPointerLocked = true;
         this.blocker.style.display = 'none';
@@ -1213,7 +1280,7 @@ export class MatchScene {
 
     // Mouse movement -> Camera angles (respect sensitivity setting)
     document.addEventListener('mousemove', (e) => {
-      if (!this.isPointerLocked) return;
+      if (this.isMobile || !this.isPointerLocked) return;
 
       const sensitivity = 0.0022 * this.sensitivityMultiplier;
       this.cameraYaw -= e.movementX * sensitivity;
@@ -1225,7 +1292,8 @@ export class MatchScene {
 
     // Mouse click -> Firing
     document.addEventListener('mousedown', (e) => {
-      if (this.isPointerLocked && e.button === 0) {
+      if (this.isMobile || !this.isPointerLocked) return;
+      if (e.button === 0) {
         this.fireActiveWeapon();
       }
     });
@@ -1275,13 +1343,21 @@ export class MatchScene {
       });
     }
 
-    const weatherInput = document.getElementById('setting-weather');
-    if (weatherInput) {
-      weatherInput.value = this.weatherSetting;
-      weatherInput.addEventListener('change', (e) => {
-        this.weatherSetting = e.target.value;
-        this.weatherTimer = 0; // reset transition timers
-        this.addKillLog(`WEATHER CONFIG: ${e.target.value.toUpperCase()}`);
+    const brightnessInput = document.getElementById('setting-brightness');
+    const brightnessValText = document.getElementById('setting-brightness-val');
+    if (brightnessInput && brightnessValText) {
+      brightnessInput.value = this.brightnessVal;
+      brightnessValText.innerText = this.brightnessVal;
+
+      brightnessInput.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        brightnessValText.innerText = val;
+        this.brightnessVal = val;
+
+        // Dynamically scale light intensities in real-time
+        const mult = val / 1000;
+        if (this.ambientLight) this.ambientLight.intensity = 1.8 * mult;
+        if (this.sunLight) this.sunLight.intensity = 3.0 * mult;
       });
     }
 
@@ -1298,6 +1374,144 @@ export class MatchScene {
         }
       });
     });
+
+    // Mobile touch control listeners
+    if (this.isMobile) {
+      const joystickContainer = document.getElementById('touch-joystick-container');
+      const joystickThumb = document.getElementById('joystick-thumb');
+
+      if (joystickContainer && joystickThumb) {
+        let joystickTouchId = null;
+        let startX = 0;
+        let startY = 0;
+        const maxDist = 50;
+
+        joystickContainer.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          if (joystickTouchId !== null) return;
+
+          joystickTouchId = e.pointerId;
+          this.joystickActive = true;
+
+          const rect = joystickContainer.getBoundingClientRect();
+          startX = rect.left + rect.width / 2;
+          startY = rect.top + rect.height / 2;
+          joystickContainer.setPointerCapture(e.pointerId);
+        });
+
+        joystickContainer.addEventListener('pointermove', (e) => {
+          e.preventDefault();
+          if (joystickTouchId !== e.pointerId) return;
+
+          const dx = e.clientX - startX;
+          const dy = e.clientY - startY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          let finalX = dx;
+          let finalY = dy;
+          if (dist > maxDist) {
+            finalX = (dx / dist) * maxDist;
+            finalY = (dy / dist) * maxDist;
+          }
+
+          joystickThumb.style.transform = `translate(${finalX}px, ${finalY}px)`;
+
+          this.joystickVector.x = finalX / maxDist;
+          this.joystickVector.y = finalY / maxDist;
+        });
+
+        const resetJoystick = (e) => {
+          if (e.pointerId === joystickTouchId) {
+            joystickTouchId = null;
+            this.joystickActive = false;
+            this.joystickVector.set(0, 0);
+            joystickThumb.style.transform = 'translate(0px, 0px)';
+          }
+        };
+
+        joystickContainer.addEventListener('pointerup', resetJoystick);
+        joystickContainer.addEventListener('pointercancel', resetJoystick);
+      }
+
+      const lookZone = document.getElementById('touch-look-zone');
+      if (lookZone) {
+        let lookTouchId = null;
+        let lastTouchX = 0;
+        let lastTouchY = 0;
+
+        lookZone.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          if (lookTouchId !== null) return;
+
+          lookTouchId = e.pointerId;
+          lastTouchX = e.clientX;
+          lastTouchY = e.clientY;
+          lookZone.setPointerCapture(e.pointerId);
+        });
+
+        lookZone.addEventListener('pointermove', (e) => {
+          e.preventDefault();
+          if (lookTouchId !== e.pointerId) return;
+
+          const dx = e.clientX - lastTouchX;
+          const dy = e.clientY - lastTouchY;
+
+          const touchSensitivity = 0.0035 * this.sensitivityMultiplier;
+          this.cameraYaw -= dx * touchSensitivity;
+          this.cameraPitch -= dy * touchSensitivity;
+          this.cameraPitch = Math.max(-1.1, Math.min(0.35, this.cameraPitch));
+
+          lastTouchX = e.clientX;
+          lastTouchY = e.clientY;
+        });
+
+        const resetLook = (e) => {
+          if (e.pointerId === lookTouchId) {
+            lookTouchId = null;
+          }
+        };
+
+        lookZone.addEventListener('pointerup', resetLook);
+        lookZone.addEventListener('pointercancel', resetLook);
+      }
+
+      const fireBtn = document.getElementById('touch-fire-btn');
+      if (fireBtn) {
+        fireBtn.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          this.touchFiring = true;
+          this.fireActiveWeapon();
+          fireBtn.setPointerCapture(e.pointerId);
+        });
+        fireBtn.addEventListener('pointerup', (e) => {
+          e.preventDefault();
+          this.touchFiring = false;
+        });
+        fireBtn.addEventListener('pointercancel', (e) => {
+          e.preventDefault();
+          this.touchFiring = false;
+        });
+      }
+
+      const switchWeaponBtn = document.getElementById('touch-weapon-switch');
+      if (switchWeaponBtn) {
+        switchWeaponBtn.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          const keys = Object.keys(this.weaponConfigs);
+          const currentIndex = keys.indexOf(this.selectedWeapon);
+          const nextIndex = (currentIndex + 1) % keys.length;
+          this.switchWeapon(keys[nextIndex]);
+        });
+      }
+
+      const switchPovBtn = document.getElementById('touch-pov-btn');
+      if (switchPovBtn) {
+        switchPovBtn.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          this.cycleCameraMode();
+        });
+      }
+    }
   }
 
   /**
@@ -1306,12 +1520,12 @@ export class MatchScene {
   switchWeapon(weaponId) {
     if (!this.weaponConfigs[weaponId]) return;
     this.selectedWeapon = weaponId;
-    
+
     // Equip on 3D CharacterModel
     if (this.playerCharacter) {
       this.playerCharacter.equipWeapon(weaponId);
     }
-    
+
     this.updateHUD();
     this.addKillLog(`Switched to: ${this.weaponConfigs[weaponId].name}`);
   }
@@ -1358,7 +1572,7 @@ export class MatchScene {
       for (let i = 0; i < intersects.length; i++) {
         const obj = intersects[i].object;
         let isPlayerMesh = false;
-        
+
         // Traverse upwards to verify it's not the player character
         obj.traverseAncestors((ancestor) => {
           if (ancestor === this.playerCharacter) isPlayerMesh = true;
@@ -1484,7 +1698,7 @@ export class MatchScene {
    */
   damageEnemy(enemy, amount) {
     enemy.health -= amount;
-    
+
     // Spawn damage sparks
     this.spawnSparks(enemy.mesh.position.clone().add(new THREE.Vector3(0, 1, 0)), 0xff7700);
 
@@ -1545,7 +1759,7 @@ export class MatchScene {
    */
   handlePlayerDeath() {
     this.addKillLog(`CRITICAL DAMAGE: YOU ELIMINATED!`);
-    
+
     // Lock movements
     this.keys.w = this.keys.a = this.keys.s = this.keys.d = false;
 
@@ -1599,6 +1813,12 @@ export class MatchScene {
     if (this.hudWeaponName) {
       const config = this.weaponConfigs[this.selectedWeapon];
       this.hudWeaponName.innerText = config ? config.name : 'Unknown';
+    }
+    const touchWeaponLabel = document.getElementById('touch-weapon-label');
+    if (touchWeaponLabel) {
+      const config = this.weaponConfigs[this.selectedWeapon];
+      const abbrev = config ? config.name.split(' ').map(w => w[0]).join('') : 'NXT';
+      touchWeaponLabel.innerText = abbrev;
     }
 
     // 3. Kills
@@ -1657,26 +1877,36 @@ export class MatchScene {
    * Physics updates: move player and check collisions with boundaries/obstacles.
    */
   updatePlayerPhysics(delta) {
-    if (!this.isPointerLocked || this.playerHealth <= 0) return;
+    if ((!this.isPointerLocked && !this.isMobile) || this.playerHealth <= 0) return;
 
     // Movement Vectors relative to camera direction
     const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.cameraYaw);
     const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.cameraYaw);
-    
+
     const moveDir = new THREE.Vector3();
-    if (this.keys.w) moveDir.add(forward);
-    if (this.keys.s) moveDir.add(forward.clone().negate());
-    if (this.keys.d) moveDir.add(right);
-    if (this.keys.a) moveDir.add(right.clone().negate());
+    let moveSpeedFactor = 1.0;
+
+    if (this.isMobile && this.joystickActive) {
+      moveDir.addScaledVector(forward, -this.joystickVector.y);
+      moveDir.addScaledVector(right, this.joystickVector.x);
+
+      const magnitude = this.joystickVector.length();
+      moveSpeedFactor = Math.min(magnitude, 1.0);
+    } else {
+      if (this.keys.w) moveDir.add(forward);
+      if (this.keys.s) moveDir.add(forward.clone().negate());
+      if (this.keys.d) moveDir.add(right);
+      if (this.keys.a) moveDir.add(right.clone().negate());
+    }
 
     const isMoving = moveDir.lengthSq() > 0;
     if (isMoving) {
       moveDir.normalize();
-      
+
       // Update target player velocities
-      this.playerVelocity.copy(moveDir.multiplyScalar(this.playerSpeed));
+      this.playerVelocity.copy(moveDir.multiplyScalar(this.playerSpeed * moveSpeedFactor));
       this.playerPos.addScaledVector(this.playerVelocity, delta);
-      
+
       // Face movement direction ONLY when in front-facing camera POV
       if (this.cameraMode === 'third_person_front') {
         const targetAngle = Math.atan2(this.playerVelocity.x, this.playerVelocity.z);
@@ -1698,7 +1928,7 @@ export class MatchScene {
       const dz = this.playerPos.z - item.mesh.position.z;
       const dist = Math.sqrt(dx * dx + dz * dz);
       const minDist = item.radius + playerRadius;
-      
+
       if (dist < minDist) {
         // Push player outside scenery cylinder
         const overlap = minDist - dist;
@@ -1712,10 +1942,10 @@ export class MatchScene {
     // Update 3D player mesh coordinates
     this.playerPos.y = getTerrainHeight(this.playerPos.x, this.playerPos.z);
     this.playerCharacter.position.copy(this.playerPos);
-    
+
     // Log player position to console each frame temporarily
     console.log("Player Position - X:", this.playerPos.x.toFixed(2), "Z:", this.playerPos.z.toFixed(2));
-    
+
     // Play leg swings if moving
     this.playerCharacter.updateAnimation(this.clock.getElapsedTime(), isMoving);
   }
@@ -1739,7 +1969,7 @@ export class MatchScene {
    */
   setCameraMode(mode) {
     this.cameraMode = mode;
-    
+
     // Update HUD POV toggle button label
     const povBtn = document.getElementById('hud-pov-btn');
     if (povBtn) {
@@ -1798,10 +2028,10 @@ export class MatchScene {
         -Math.cos(this.cameraYaw) * Math.cos(this.cameraPitch)
       );
       this.camera.lookAt(headPos.clone().add(targetLook));
-      
+
       // Keep player body aligned to look Yaw direction
       this.playerCharacter.rotation.y = this.cameraYaw;
-      
+
     } else if (this.cameraMode === 'third_person_behind') {
       // 2. THIRD-PERSON BEHIND (Over-The-Shoulder OTS)
       const targetOffset = new THREE.Vector3(
@@ -1849,175 +2079,7 @@ export class MatchScene {
     }
   }
 
-  /**
-   * Updates dynamic weather cycles, sky colors, fog densities, and lighting states.
-   */
-  updateWeatherSystem(time, delta) {
-    // 1. Cycle weather dynamically if configured to dynamic
-    if (this.weatherSetting === 'dynamic') {
-      this.weatherTimer += delta;
-      if (this.weatherTimer > this.weatherDuration) {
-        this.weatherTimer = 0;
-        
-        // Cycle states: sunny -> cloudy -> stormy -> sunny
-        if (this.currentWeather === 'sunny') {
-          this.currentWeather = 'cloudy';
-        } else if (this.currentWeather === 'cloudy') {
-          this.currentWeather = 'stormy';
-        } else {
-          this.currentWeather = 'sunny';
-        }
-        
-        this.addKillLog(`WEATHER INCOMING: ${this.currentWeather.toUpperCase()}`);
-      }
-    } else {
-      this.currentWeather = this.weatherSetting;
-    }
 
-    // 2. Set target weather colors & intensities
-    if (this.currentWeather === 'sunny') {
-      this.targetSkyColor.setHex(0x141b27); // slate-blue sky
-      this.targetFogColor.setHex(0x1a2130); // slate-grey fog
-      this.targetFogDensity = 0.010; // slightly thinner fog
-      this.targetSunIntensity = 2.2; // much brighter sunlight
-      this.targetSunColor.setHex(0xffedd5); // warm peach sun
-    } else if (this.currentWeather === 'cloudy') {
-      this.targetSkyColor.setHex(0x273549); // light slate cloudy sky
-      this.targetFogColor.setHex(0x2d3d54); // grey-blue fog
-      this.targetFogDensity = 0.020; // thinner fog for visibility
-      this.targetSunIntensity = 1.2; // brighter overcast
-      this.targetSunColor.setHex(0xabc0d4); // cool slate grey light
-    } else if (this.currentWeather === 'stormy') {
-      this.targetSkyColor.setHex(0x11151e); // dark storm slate sky
-      this.targetFogColor.setHex(0x151b26); // stormy fog
-      this.targetFogDensity = 0.030; // slightly thinner fog for better view
-      this.targetSunIntensity = 0.55; // brighter stormy sky
-      this.targetSunColor.setHex(0x505b70); // slate grey light
-    }
-
-    // 3. Smoothly interpolate (lerp) scene parameters
-    const lerpSpeed = 1.5 * delta;
-    this.scene.background.lerp(this.targetSkyColor, lerpSpeed);
-    this.scene.fog.color.lerp(this.targetFogColor, lerpSpeed);
-    
-    // Thicken/thin fog
-    this.scene.fog.density += (this.targetFogDensity - this.scene.fog.density) * lerpSpeed;
-    
-    // Adjust sun light intensity and colors
-    this.sunLight.intensity += (this.targetSunIntensity - this.sunLight.intensity) * lerpSpeed;
-    this.sunLight.color.lerp(this.targetSunColor, lerpSpeed);
-
-    // 4. Stormy lightning strike checks
-    if (this.currentWeather === 'stormy') {
-      const timeSinceLastStrike = time - this.lastLightningStrikeTime;
-      // Trigger lightning randomly (at least 6s apart, with ~0.4% chance per frame)
-      if (timeSinceLastStrike > 6.0 && Math.random() < 0.0045) {
-        this.triggerLightning(time);
-      }
-    }
-
-    // 5. Handle active lightning flash (boost fog/background brightness)
-    if (this.lightningFlash > 0) {
-      // Decay flash value
-      this.lightningFlash -= 3.5 * delta;
-      if (this.lightningFlash < 0) this.lightningFlash = 0;
-      
-      // Lerp sky background and fog colors to white-cyan
-      const flashColor = new THREE.Color(0xd0e8ff);
-      this.scene.background.lerp(flashColor, this.lightningFlash);
-      this.scene.fog.color.lerp(flashColor, this.lightningFlash);
-      
-      // Brighten sun temporarily
-      this.sunLight.intensity += this.lightningFlash * 6.0;
-    }
-  }
-
-  /**
-   * Spawns a procedural jagged lightning bolt mesh and triggers sky illumination.
-   * @param {number} time - Elapsed time in seconds
-   */
-  triggerLightning(time) {
-    this.lastLightningStrikeTime = time;
-    
-    // Strike point relative to player coordinates (within 50 units)
-    const offsetX = (Math.random() - 0.5) * 80;
-    const offsetZ = (Math.random() - 0.5) * 80;
-    const startX = this.playerPos.x + offsetX;
-    const startZ = this.playerPos.z + offsetZ;
-    
-    // Jagged lightning bolt mesh generation
-    const segments = 10;
-    const start = new THREE.Vector3(startX, 26, startZ);
-    const end = new THREE.Vector3(startX + (Math.random() - 0.5) * 15, 0, startZ + (Math.random() - 0.5) * 15);
-    
-    const points = [];
-    points.push(start.clone());
-    
-    // Generate intermediate jagged coordinates
-    for (let i = 1; i < segments; i++) {
-      const ratio = i / segments;
-      const mid = new THREE.Vector3().lerpVectors(start, end, ratio);
-      
-      // Add jagged offset noise perpendicular to falling direction
-      const noise = 2.4;
-      mid.x += (Math.random() - 0.5) * noise;
-      mid.z += (Math.random() - 0.5) * noise;
-      points.push(mid);
-    }
-    points.push(end.clone());
-    
-    // Construct Cylinder Segment meshes for the bolt
-    const boltGroup = new THREE.Group();
-    const boltMat = new THREE.MeshBasicMaterial({ color: 0x93c5fd, transparent: true, opacity: 0.95 });
-    
-    for (let i = 0; i < points.length - 1; i++) {
-      const p1 = points[i];
-      const p2 = points[i + 1];
-      const dist = p1.distanceTo(p2);
-      
-      // Thicker cylinders at top, tapering down
-      const radius = 0.12 * (1.0 - (i / segments) * 0.5);
-      const geom = new THREE.CylinderGeometry(radius, radius, dist, 4);
-      geom.rotateX(Math.PI / 2);
-      geom.translate(0, 0, dist / 2);
-      
-      const mesh = new THREE.Mesh(geom, boltMat);
-      mesh.position.copy(p1);
-      mesh.lookAt(p2);
-      boltGroup.add(mesh);
-    }
-    
-    this.scene.add(boltGroup);
-    this.lightningBoltMesh = boltGroup;
-    
-    // Trigger intense environment flash overlay
-    this.lightningFlash = 1.0;
-    this.addKillLog("⚡ ATMOSPHERIC LIGHTNING DETECTED");
-    
-    // Point light at strike impact site
-    const light = new THREE.PointLight(0xd0e8ff, 35, 70);
-    light.position.copy(end);
-    this.scene.add(light);
-    this.lightningLight = light;
-    
-    // Dispose resources after a brief visual delay (150ms)
-    setTimeout(() => {
-      if (this.lightningBoltMesh) {
-        this.scene.remove(this.lightningBoltMesh);
-        this.lightningBoltMesh.traverse((child) => {
-          if (child.isMesh) {
-            if (child.geometry) child.geometry.dispose();
-            if (child.material) child.material.dispose();
-          }
-        });
-        this.lightningBoltMesh = null;
-      }
-      if (this.lightningLight) {
-        this.scene.remove(this.lightningLight);
-        this.lightningLight = null;
-      }
-    }, 150);
-  }
 
   /**
    * AI patrol navigation + firing at player.
@@ -2039,7 +2101,7 @@ export class MatchScene {
         const dx = this.playerPos.x - mesh.position.x;
         const dz = this.playerPos.z - mesh.position.z;
         const facingAngle = Math.atan2(dx, dz);
-        
+
         // Lerp rotation towards player
         mesh.rotation.y = facingAngle;
 
@@ -2094,7 +2156,7 @@ export class MatchScene {
 
             this.createTracer(enemyMuzzle, targetPoint, 0xef4444); // red laser
             this.spawnSparks(targetPoint, 0xef4444);
-            
+
             // Damage player
             this.damagePlayer(8);
           }
@@ -2134,7 +2196,7 @@ export class MatchScene {
         this.scene.remove(tracer.mesh);
         if (tracer.mesh.geometry) tracer.mesh.geometry.dispose();
         if (tracer.mesh.material) tracer.mesh.material.dispose();
-        
+
         if (tracer.light) this.scene.remove(tracer.light);
         this.tracers.splice(i, 1);
       } else {
@@ -2172,8 +2234,8 @@ export class MatchScene {
         // Wind-swaying rotation around local Z or X axis (since it's a 3D group, let's use Z and X)
         const windSpeed = 2.4;
         const windSway = Math.sin(time * windSpeed + swayPhase) * 0.045; // 0.045 rad sway
-        const windSwayX = Math.cos(time * windSpeed * 0.8 + swayPhase) * 0.03; 
-        
+        const windSwayX = Math.cos(time * windSpeed * 0.8 + swayPhase) * 0.03;
+
         // We preserve the random Y rotation set during init
         mesh.rotation.z = windSway;
         mesh.rotation.x = windSwayX;
@@ -2183,15 +2245,15 @@ export class MatchScene {
     // 4. Rain Particles simulation update (velocity falling & wrapping)
     if (this.currentWeather === 'stormy') {
       this.rainParticles.visible = true;
-      
+
       const geom = this.rainParticles.geometry;
       const positions = geom.attributes.position.array;
       const count = positions.length;
-      
+
       const fallSpeed = 16.0;
       for (let i = 1; i < count; i += 3) {
         positions[i] -= fallSpeed * delta; // falling down (y component)
-        
+
         // Wrap back up if hitting ground
         if (positions[i] < 0) {
           positions[i] = 20.0 + Math.random() * 2;
@@ -2200,9 +2262,9 @@ export class MatchScene {
           positions[i + 1] = (Math.random() - 0.5) * 40;
         }
       }
-      
+
       geom.attributes.position.needsUpdate = true;
-      
+
       // Center rain group to follow player in all axes
       this.rainParticles.position.set(this.playerPos.x, this.playerPos.y, this.playerPos.z);
     } else {
@@ -2224,8 +2286,14 @@ export class MatchScene {
     this.updatePlayerPhysics(delta);
     this.updateCamera();
     this.updateEnemies(time, delta);
-    this.updateWeatherSystem(time, delta);
     this.animateVFX(time, delta);
+
+    if (this.isMobile && this.touchFiring) {
+      const config = this.weaponConfigs[this.selectedWeapon];
+      if (config && config.automatic) {
+        this.fireActiveWeapon();
+      }
+    }
 
     this.renderer.render(this.scene, this.camera);
   }
@@ -2236,7 +2304,7 @@ export class MatchScene {
   destroy() {
     this.isRunning = false;
     window.removeEventListener('resize', this.resizeHandler);
-    
+
     // Dispose resources
     this.scene.traverse((object) => {
       if (!object.isMesh) return;
