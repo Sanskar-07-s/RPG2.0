@@ -50,9 +50,9 @@ export class MatchScene {
     // Weapon cooldown tracking
     this.lastFireTime = 0;
     this.weaponConfigs = {
-      pulse_rifle: { name: 'Tactical Rifle', damage: 15, fireRate: 0.15, range: 60, color: 0x06b6d4, spread: 0.02 },
-      plasma_pistol: { name: 'Combat Pistol', damage: 25, fireRate: 0.4, range: 40, color: 0xfabb3c, spread: 0.01 },
-      void_shotgun: { name: 'Combat Shotgun', damage: 10, fireRate: 0.9, range: 20, color: 0xef4444, spread: 0.08, pellets: 6 }
+      pulse_rifle: { name: 'Tactical Rifle', damage: 15, fireRate: 0.15, range: 60, color: 0x06b6d4, spread: 0.02, automatic: true },
+      plasma_pistol: { name: 'Combat Pistol', damage: 25, fireRate: 0.4, range: 40, color: 0xfabb3c, spread: 0.01, automatic: false },
+      void_shotgun: { name: 'Combat Shotgun', damage: 10, fireRate: 0.9, range: 20, color: 0xef4444, spread: 0.08, pellets: 6, automatic: false }
     };
 
     // Arrays to hold entities and scenery
@@ -817,6 +817,42 @@ export class MatchScene {
         lookZone.addEventListener('touchend', resetLook);
         lookZone.addEventListener('touchcancel', resetLook);
       }
+
+      const fireBtn = document.getElementById('touch-fire-btn');
+      if (fireBtn) {
+        fireBtn.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          this.touchFiring = true;
+          this.fireActiveWeapon(); // Fire immediately on tap
+        });
+        fireBtn.addEventListener('touchend', (e) => {
+          e.preventDefault();
+          this.touchFiring = false;
+        });
+        fireBtn.addEventListener('touchcancel', (e) => {
+          e.preventDefault();
+          this.touchFiring = false;
+        });
+      }
+
+      const switchWeaponBtn = document.getElementById('touch-switch-weapon-btn');
+      if (switchWeaponBtn) {
+        switchWeaponBtn.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          const keys = Object.keys(this.weaponConfigs);
+          const currentIndex = keys.indexOf(this.selectedWeapon);
+          const nextIndex = (currentIndex + 1) % keys.length;
+          this.switchWeapon(keys[nextIndex]);
+        });
+      }
+
+      const switchPovBtn = document.getElementById('touch-switch-pov-btn');
+      if (switchPovBtn) {
+        switchPovBtn.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          this.cycleCameraMode();
+        });
+      }
     }
   }
 
@@ -1550,6 +1586,13 @@ export class MatchScene {
     this.updateCamera();
     this.updateEnemies(time, delta);
     this.animateVFX(time, delta);
+
+    if (this.isMobile && this.touchFiring) {
+      const config = this.weaponConfigs[this.selectedWeapon];
+      if (config && config.automatic) {
+        this.fireActiveWeapon();
+      }
+    }
 
     this.renderer.render(this.scene, this.camera);
   }

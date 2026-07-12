@@ -877,6 +877,155 @@
       pointer-events: auto;
       touch-action: none;
     }
+
+    #touch-fire-btn {
+      position: absolute;
+      bottom: 50px;
+      right: 50px;
+      width: 80px;
+      height: 80px;
+      background: radial-gradient(circle, rgba(234, 88, 12, 0.8) 0%, rgba(249, 115, 22, 0.4) 100%);
+      border: 3px solid var(--accent-tactical);
+      border-radius: 50%;
+      pointer-events: auto;
+      touch-action: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(234, 88, 12, 0.4);
+      color: #fff;
+      font-size: 1.8rem;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+      user-select: none;
+    }
+
+    #touch-fire-btn:active {
+      transform: scale(0.92);
+      background: radial-gradient(circle, rgba(234, 88, 12, 0.95) 0%, rgba(249, 115, 22, 0.6) 100%);
+    }
+
+    #touch-weapon-switch {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 12px;
+      pointer-events: auto;
+      z-index: 10;
+    }
+
+    .touch-weapon-btn {
+      width: 54px;
+      height: 54px;
+      background: rgba(13, 17, 24, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      color: #fff;
+      font-size: 1.2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      pointer-events: auto;
+      touch-action: none;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+      transition: all 0.2s;
+    }
+
+    .touch-weapon-btn.active {
+      border-color: var(--accent-tactical) !important;
+      background: rgba(249, 115, 22, 0.2) !important;
+      box-shadow: 0 0 8px rgba(249, 115, 22, 0.4) !important;
+    }
+
+    .touch-weapon-btn .weapon-label {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.5rem;
+      font-weight: 800;
+      margin-top: 3px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .touch-weapon-btn.active .weapon-label {
+      color: var(--accent-tactical);
+    }
+
+    #touch-pov-btn {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(13, 17, 24, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 1.3rem;
+      cursor: pointer;
+      pointer-events: auto;
+      touch-action: none;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+      z-index: 10;
+    }
+
+    /* Media queries for responsiveness */
+    @media (max-width: 1024px) {
+      /* Stack Lobby Screen vertically */
+      #lobby-screen {
+        flex-direction: column !important;
+        overflow-y: auto !important;
+      }
+      
+      .lobby-preview-container {
+        width: 100% !important;
+        height: 40vh !important;
+        flex-shrink: 0;
+        border-right: none !important;
+        border-bottom: 2px solid var(--panel-border);
+      }
+      
+      .lobby-dashboard {
+        width: 100% !important;
+        height: auto !important;
+        overflow-y: visible !important;
+        padding: 20px !important;
+      }
+
+      /* Stack control panels if they overlap */
+      .panel-container {
+        height: auto !important;
+      }
+
+      /* Reposition HUD for mobile view to prevent overlaps */
+      #hud-health-container {
+        bottom: auto !important;
+        top: 20px !important;
+        left: 20px !important;
+        width: 160px !important;
+      }
+
+      #hud-score-container {
+        top: 20px !important;
+        left: 200px !important;
+      }
+
+      #hud-controls-container {
+        top: 20px !important;
+        right: 20px !important;
+        left: auto !important;
+      }
+
+      #hud-weapon-container {
+        display: none !important; /* Hide original weapon container */
+      }
+    }
   </style>
 </head>
 <body>
