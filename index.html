@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vortex Strike: Battle Arena</title>
+  <!-- Google Fonts: Orbitron for Tactical Titles and Inter for text -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-dark: #07090e;
+      --accent-tactical: #f97316; /* PUBG Orange */
+      --accent-neon-cyan: #06b6d4; /* Cyan neon */
+      --accent-olive: #65a30d; /* Military Olive */
+      --panel-border: rgba(249, 115, 22, 0.2);
+      --panel-bg: rgba(13, 17, 24, 0.85);
+      --text-white: #f8fafc;
+      --text-muted: #64748b;
+      --panel-width: 480px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-dark);
+      font-family: 'Inter', sans-serif;
+      color: var(--text-white);
+    }
+
+    /* 3D Match Canvas */
+    #game-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    /* Split Lobby Layout */
+    #lobby-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      display: flex;
+      background: radial-gradient(circle at 25% 50%, rgba(20, 25, 35, 0.1) 0%, rgba(7, 9, 14, 0.98) 85%);
+      transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s;
+      backdrop-filter: blur(2px);
+    }
+
+    /* Left view: 3D Character turtable preview */
+    .lobby-preview-container {
+      width: 55%;
+      height: 100%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #lobby-preview-canvas {
+      width: 100%;
+      height: 100%;
+      z-index: 8;
+    }
+
+    /* Right view: Dashboard panels */
+    .lobby-dashboard {
+      width: 45%;
+      height: 100%;
+      background: linear-gradient(90deg, rgba(7, 9, 14, 0) 0%, rgba(7, 9, 14, 0.9) 35%, rgba(7, 9, 14, 0.98) 100%);
+      border-left: 1px solid rgba(255, 255, 255, 0.03);
+      padding: 50px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      z-index: 9;
+      box-shadow: -20px 0 50px rgba(0, 0, 0, 0.8);
+    }
+
+    /* Header Block */
+    .lobby-header {
+      margin-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 20px;
+    }
+
+    h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2.5rem;
+      font-weight: 900;
+      letter-spacing: 4px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #ffffff 50%, var(--accent-tactical) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+    }
+
+    .lobby-header .subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 5px;
+      font-weight: 700;
+    }
+
+    /* Pages container: overlays of main dashboard & sub-pages */
+    .panel-container {
+      position: relative;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      margin: 20px 0;
+    }
+
+    /* Transition Panel Styles */
+    .dashboard-panel {
+      position: absolute;
+      width: 100%;
+      top: 50%;
+      transform: translateY(-50%) translateX(0);
+      opacity: 1;
+      visibility: visible;
+      transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .dashboard-panel.hidden {
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-50%) translateX(50px);
+      pointer-events: none;
+    }
+
+    /* Tactical Cards */
+    .glass-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 24px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(12px);
+      position: relative;
+    }
+
+    /* Angular corners detail */
+    .glass-card::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: -1px;
+      width: 10px;
+      height: 10px;
+      border-top: 2px solid var(--accent-tactical);
+      border-left: 2px solid var(--accent-tactical);
+    }
+    .glass-card::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      right: -1px;
+      width: 10px;
+      height: 10px;
+      border-bottom: 2px solid var(--accent-tactical);
+      border-right: 2px solid var(--accent-tactical);
+    }
+
+    .panel-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      color: var(--text-white);
+      text-transform: uppercase;
+      padding-bottom: 10px;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-title::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 14px;
+      background-color: var(--accent-tactical);
+    }
+
+    /* Sub-page Navigation Section Cards */
+    .section-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      padding: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    .section-card:hover {
+      background: rgba(249, 115, 22, 0.05);
+      border-color: rgba(249, 115, 22, 0.4);
+      transform: translateX(-4px);
+    }
+
+    .section-card-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .section-card-title {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      font-size: 1rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-white);
+    }
+
+    .section-card-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .section-card-arrow {
+      font-size: 1.2rem;
+      color: var(--accent-tactical);
+      transition: transform 0.3s ease;
+    }
+
+    .section-card:hover .section-card-arrow {
+      transform: translateX(4px);
+    }
+
+    /* Custom Back Button */
+    .back-btn {
+      align-self: flex-start;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.2s ease;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .back-btn:hover {
+      color: var(--accent-tactical);
+    }
+
+    /* Weapon Selection Cards List */
+    .option-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 380px;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+
+    /* Scrollbar style */
+    .option-list::-webkit-scrollbar {
+      width: 4px;
+    }
+    .option-list::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.1);
+    }
+    .option-list::-webkit-scrollbar-thumb {
+      background: var(--accent-tactical);
+      border-radius: 2px;
+    }
+
+    .select-item {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      padding: 14px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .select-item:hover {
+      background: rgba(249, 115, 22, 0.04);
+      border-color: rgba(249, 115, 22, 0.3);
+    }
+
+    .select-item.active {
+      background: rgba(249, 115, 22, 0.12);
+      border-color: var(--accent-tactical);
+      box-shadow: inset 0 0 10px rgba(249, 115, 22, 0.05);
+    }
+
+    .select-item-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .weapon-icon {
+      width: 40px;
+      height: 40px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+    }
+
+    .select-item.active .weapon-icon {
+      border-color: var(--accent-tactical);
+      background: rgba(249, 115, 22, 0.15);
+    }
+
+    .item-label {
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .item-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    /* Weapon Stats bars */
+    .weapon-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      padding-top: 8px;
+    }
+
+    .stat-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .stat-name {
+      text-transform: uppercase;
+      font-weight: 600;
+      width: 70px;
+    }
+
+    .stat-bar-bg {
+      flex-grow: 1;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 2px;
+      margin: 0 10px;
+      position: relative;
+    }
+
+    .stat-bar-fill {
+      height: 100%;
+      background-color: var(--accent-tactical);
+      border-radius: 2px;
+      transition: width 0.5s ease;
+    }
+
+    .stat-val {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      color: var(--text-white);
+      width: 25px;
+      text-align: right;
+    }
+
+    /* Outfit/Cloth selections */
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(1, 1fr);
+      gap: 12px;
+    }
+
+    .cloth-card {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 14px 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: all 0.2s ease;
+    }
+
+    .cloth-card:hover {
+      background: rgba(249, 115, 22, 0.04);
+      border-color: rgba(249, 115, 22, 0.3);
+    }
+
+    .cloth-card.active {
+      background: rgba(249, 115, 22, 0.12);
+      border-color: var(--accent-tactical);
+    }
+
+    .color-preview {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .cloth-info {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .cloth-name {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .cloth-bonus {
+      font-size: 0.7rem;
+      color: var(--accent-tactical);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    /* Bottom Control Bar: Signature & Square Start Button */
+    .lobby-controls-bar {
+      display: flex;
+      align-items: flex-end;
+      gap: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 20px;
+    }
+
+    .name-input-container {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    label {
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--accent-tactical);
+    }
+
+    input[type="text"] {
+      width: 100%;
+      background: rgba(5, 7, 10, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      padding: 16px;
+      color: var(--text-white);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.95rem;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent-tactical);
+      box-shadow: 0 0 10px rgba(249, 115, 22, 0.15);
+    }
+
+    /* Large Square Action Button (PUBG style) */
+    button.start-btn {
+      width: 130px;
+      height: 130px;
+      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+      border: none;
+      border-radius: 6px;
+      color: #ffffff;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(234, 88, 12, 0.3);
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      text-transform: uppercase;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      flex-shrink: 0;
+    }
+
+    button.start-btn .arrow {
+      font-size: 1.8rem;
+      line-height: 1;
+      transition: transform 0.2s ease;
+    }
+
+    button.start-btn:hover:not(:disabled) {
+      box-shadow: 0 6px 22px rgba(234, 88, 12, 0.5);
+      background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+    }
+    
+    button.start-btn:hover:not(:disabled) .arrow {
+      transform: scale(1.2) translateY(2px);
+    }
+
+    button.start-btn:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    button.start-btn:disabled {
+      background: #1c1d22;
+      color: #4b4c52;
+      cursor: not-allowed;
+      box-shadow: none;
+      text-shadow: none;
+    }
+
+    /* Screen Transition State */
+    #lobby-screen.fade-out {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    /* HUD overlay */
+    #hud-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 5;
+      pointer-events: none;
+      display: none;
+    }
+
+    /* Crosshair */
+    #crosshair {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 12px;
+      height: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .crosshair-line {
+      position: absolute;
+      background-color: #00ffcc; /* Sci-fi cyan */
+      box-shadow: 0 0 4px #00ffcc;
+    }
+    .crosshair-h { width: 14px; height: 2px; }
+    .crosshair-v { width: 2px; height: 14px; }
+    .crosshair-dot { width: 2px; height: 2px; background: #00ffcc; border-radius: 50%; }
+
+    /* In-game HUD Layout */
+    .hud-element {
+      position: absolute;
+      pointer-events: auto;
+      background: rgba(13, 17, 24, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      padding: 12px 18px;
+      backdrop-filter: blur(8px);
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    #hud-health-container {
+      bottom: 30px;
+      left: 30px;
+      width: 250px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .hud-label {
+      font-size: 0.65rem;
+      color: var(--accent-tactical);
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .hud-health-bar-bg {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    #hud-health-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #ef4444 0%, #f97316 100%);
+      transition: width 0.25s ease;
+    }
+
+    #hud-health-text {
+      font-size: 0.9rem;
+      font-weight: 800;
+      text-align: right;
+      color: #fff;
+    }
+
+    #hud-weapon-container {
+      bottom: 30px;
+      right: 30px;
+      width: 200px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: flex-end;
+    }
+
+    #hud-weapon-name {
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: #fff;
+      text-transform: uppercase;
+    }
+
+    #hud-weapon-instructions {
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+      text-align: right;
+    }
+
+    #hud-score-container {
+      top: 30px;
+      left: 30px;
+      display: flex;
+      gap: 20px;
+    }
+
+    .hud-score-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .hud-score-val {
+      font-size: 1.3rem;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    #hud-logs-container {
+      top: 30px;
+      right: 30px;
+      width: 250px;
+      max-height: 120px;
+      overflow-y: hidden;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      background: transparent;
+      border: none;
+      align-items: flex-end;
+      pointer-events: none;
+    }
+
+    .kill-log {
+      background: rgba(13, 17, 24, 0.8);
+      border-left: 3px solid var(--accent-tactical);
+      padding: 4px 10px;
+      border-radius: 0 4px 4px 0;
+      animation: logSlide 0.3s ease forwards;
+    }
+
+    @keyframes logSlide {
+      from { transform: translateX(30px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* Red screen vignette overlay for damage flash */
+    #damage-flash {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      box-shadow: inset 0 0 50px rgba(239, 68, 68, 0);
+      z-index: 4;
+      pointer-events: none;
+      transition: box-shadow 0.15s ease-out;
+    }
+    
+    #damage-flash.flash {
+      box-shadow: inset 0 0 80px rgba(239, 68, 68, 0.7);
+    }
+
+    /* Blocker screen */
+    #blocker {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(7, 9, 14, 0.65);
+      z-index: 15;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      backdrop-filter: blur(4px);
+    }
+
+    .instructions-box {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      padding: 35px 50px;
+      border-radius: 8px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      max-width: 450px;
+      position: relative;
+    }
+
+    .instructions-box::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: -1px;
+      width: 15px;
+      height: 15px;
+      border-top: 3px solid var(--accent-tactical);
+      border-left: 3px solid var(--accent-tactical);
+    }
+    .instructions-box::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      right: -1px;
+      width: 15px;
+      height: 15px;
+      border-bottom: 3px solid var(--accent-tactical);
+      border-right: 3px solid var(--accent-tactical);
+    }
+
+    .instructions-box h2 {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--accent-tactical);
+      margin-bottom: 20px;
+      letter-spacing: 2px;
+      font-size: 1.4rem;
+    }
+    
+    .instructions-box p {
+      margin-bottom: 15px;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      line-height: 1.6;
+    }
+
+    .instructions-box kbd {
+      background: #181b22;
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+
+    /* Custom scrollbar for entire panel */
+    .lobby-dashboard::-webkit-scrollbar {
+      width: 4px;
+    }
+    .lobby-dashboard::-webkit-scrollbar-thumb {
+      background: var(--accent-tactical);
+    }
+
+    /* Settings perspective options active state */
+    .perspective-option.active {
+      border-color: var(--accent-tactical) !important;
+      background: rgba(249, 115, 22, 0.15) !important;
+      color: var(--accent-tactical) !important;
+    }
+
+    #lobby-settings-btn:hover, #hud-pov-btn:hover, #hud-settings-btn:hover {
+      background: rgba(249, 115, 22, 0.15) !important;
+      border-color: var(--accent-tactical) !important;
+    }
+  </style>
+</head>
+<body>
+  <!-- 3D Match View Canvas -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- HTML/CSS Lobby Screen Overlay -->
+  <div id="lobby-screen">
+    <!-- Separate Character Preview Canvas (Left) -->
+    <div class="lobby-preview-container">
+      <canvas id="lobby-preview-canvas"></canvas>
+    </div>
+
+    <!-- Right Dashboard container (Right) -->
+    <div class="lobby-dashboard">
+      <header class="lobby-header">
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+          <div style="text-align: left;">
+            <h1>Vortex Strike</h1>
+            <div class="subtitle">Tactical Ground Operations</div>
+          </div>
+          <button id="lobby-settings-btn" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; padding: 10px; color: #fff; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Tactical Settings">⚙️</button>
+        </div>
+      </header>
+
+      <!-- Dynamic panels container -->
+      <div class="panel-container">
+        
+        <!-- 1. MAIN MENU PANEL -->
+        <div class="dashboard-panel" id="main-menu-panel">
+          <div class="glass-card">
+            <h2 class="panel-title" style="margin-bottom: 20px;">OPERATOR HUB</h2>
+            
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <!-- Cloth Customization Navigate Card -->
+              <div class="section-card" id="btn-goto-cloth">
+                <div class="section-card-info">
+                  <span class="section-card-title">Armor Customization</span>
+                  <span class="section-card-desc">Personalize combat suit colors & accents</span>
+                </div>
+                <span class="section-card-arrow">➔</span>
+              </div>
+              
+              <!-- Weapon Loadout Navigate Card -->
+              <div class="section-card" id="btn-goto-guns">
+                <div class="section-card-info">
+                  <span class="section-card-title">Tactical Armory</span>
+                  <span class="section-card-desc">Choose and inspect primary firearm stats</span>
+                </div>
+                <span class="section-card-arrow">➔</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. CLOTH CUSTOMIZATION PANEL -->
+        <div class="dashboard-panel hidden" id="cloth-customization-panel">
+          <button class="back-btn" id="btn-back-cloth">🡠 Back to Hub</button>
+          
+          <div class="glass-card">
+            <h2 class="panel-title" style="margin-bottom: 20px;">Armor Camouflage</h2>
+            
+            <div class="color-grid">
+              <!-- Desert Tan -->
+              <div class="cloth-card active" data-color="cyan">
+                <div class="color-preview" style="background-color: #c5a880;"></div>
+                <div class="cloth-info">
+                  <span class="cloth-name">Desert Tan</span>
+                  <span class="cloth-bonus">Standard issue tactical camo</span>
+                </div>
+              </div>
+              
+              <!-- Jungle Green -->
+              <div class="cloth-card" data-color="orange">
+                <div class="color-preview" style="background-color: #3e5634;"></div>
+                <div class="cloth-info">
+                  <span class="cloth-name">Jungle Green</span>
+                  <span class="cloth-bonus">Forest foliage stealth suit</span>
+                </div>
+              </div>
+              
+              <!-- Urban Black -->
+              <div class="cloth-card" data-color="green">
+                <div class="color-preview" style="background-color: #1a1c1e;"></div>
+                <div class="cloth-info">
+                  <span class="cloth-name">Urban Black</span>
+                  <span class="cloth-bonus">Night infiltrator combat suit</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. WEAPONS CUSTOMIZATION PANEL -->
+        <div class="dashboard-panel hidden" id="weapons-customization-panel">
+          <button class="back-btn" id="btn-back-guns">🡠 Back to Hub</button>
+          
+          <div class="glass-card">
+            <h2 class="panel-title" style="margin-bottom: 20px;">SELECT LOADOUT</h2>
+            
+            <div class="option-list">
+              <!-- Pulse Rifle -->
+              <div class="select-item active" data-weapon="pulse_rifle">
+                <div class="select-item-header">
+                  <div class="weapon-icon" style="color: #f97316;">🔫</div>
+                  <div>
+                    <div class="item-label">Tactical Rifle</div>
+                    <div class="item-desc">High accuracy automatic assault rifle</div>
+                  </div>
+                </div>
+                <div class="weapon-stats">
+                  <div class="stat-row">
+                    <span class="stat-name">Damage</span>
+                    <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 70%;"></div></div>
+                    <span class="stat-val">70</span>
+                  </div>
+                  <div class="stat-row">
+                    <span class="stat-name">Fire Rate</span>
+                    <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 85%;"></div></div>
+                    <span class="stat-val">85</span>
+                  </div>
+                  <div class="stat-row">
+                    <span class="stat-name">Range</span>
+                    <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 75%;"></div></div>
+                    <span class="stat-val">75</span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Plasma Pistol -->
+              <div class="select-item" data-weapon="plasma_pistol">
+                <div class="select-item-header">
+                  <div class="weapon-icon" style="color: #f97316;">🔫</div>
+                  <div>
+                    <div class="item-label">Combat Pistol</div>
+                    <div class="item-desc">Semi-automatic high-energy sidearm</div>
+                  </div>
+                </div>
+                <div class="weapon-stats">
+                  <div class="stat-row">
+                    <span class="stat-name">Damage</span>
+                    <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 45%;"></div></div>
+                    <span class="stat-val">45</span>
+                  </div>
+                  <div class="stat-row">
+                    <span class="stat-name">Fire Rate</span>
+                    <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 55%;"></div></div>
+                    <span class="stat-val">55</span>
+                  </div>
+                  <div class="stat-row">
+                    <span class="stat-name">Range</span>
+                    <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 40%;"></div></div>
+                    <span class="stat-val">40</span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Void Shotgun -->
+              <div class="select-item" data-weapon="void_shotgun">
+                <div class="select-item-header">
+                  <div class="weapon-icon" style="color: #f97316;">🔫</div>
+                  <div>
+                    <div class="item-label">Combat Shotgun</div>
+                    <div class="item-desc">Close range high impact scatter-shot gun</div>
+                  </div>
+                </div>
+                <div class="weapon-stats">
+                  <div class="stat-row">
+                    <span class="stat-name">Damage</span>
+                    <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 95%;"></div></div>
+                    <span class="stat-val">95</span>
+                  </div>
+                  <div class="stat-row">
+                    <span class="stat-name">Fire Rate</span>
+                    <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 25%;"></div></div>
+                    <span class="stat-val">25</span>
+                  </div>
+                  <div class="stat-row">
+                    <span class="stat-name">Range</span>
+                    <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 30%;"></div></div>
+                    <span class="stat-val">30</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bottom controls: Name registry + Large Square Start button -->
+      <footer class="lobby-controls-bar">
+        <div class="name-input-container">
+          <label for="username-input">Pilot Signature</label>
+          <input type="text" id="username-input" placeholder="Recruit_07" value="Recruit_07" maxlength="15" autocomplete="off">
+        </div>
+
+        <button type="button" class="start-btn" id="start-match-btn">
+          <span>DEPLOY</span>
+          <span class="arrow">➔</span>
+        </button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Red screen vignette for damage flash -->
+  <div id="damage-flash"></div>
+
+  <!-- Lock screen / Pointer lock release state blocker -->
+  <div id="blocker">
+    <div class="instructions-box" id="instructions">
+      <h2>GAME PAUSED</h2>
+      <p>Click screen to resume combat operations.</p>
+      <p><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> — Move</p>
+      <p><kbd>MOUSE</kbd> — Aim & Look around</p>
+      <p><kbd>LEFT CLICK</kbd> — Fire Primary Weapon</p>
+      <p><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> — Switch Weapon Loadout</p>
+    </div>
+  </div>
+
+  <!-- HUD Overlay -->
+  <div id="hud-overlay">
+    <div id="crosshair">
+      <div class="crosshair-dot"></div>
+      <div class="crosshair-line crosshair-h" style="left: -14px;"></div>
+      <div class="crosshair-line crosshair-h" style="left: 12px;"></div>
+      <div class="crosshair-line crosshair-v" style="top: -14px;"></div>
+      <div class="crosshair-line crosshair-v" style="top: 12px;"></div>
+    </div>
+
+    <!-- Health bar -->
+    <div class="hud-element" id="hud-health-container">
+      <div class="hud-label">HEALTH GAUGE</div>
+      <div class="hud-health-bar-bg">
+        <div id="hud-health-fill" style="width: 100%;"></div>
+      </div>
+      <div id="hud-health-text">100 / 100</div>
+    </div>
+
+    <!-- Active Weapon -->
+    <div class="hud-element" id="hud-weapon-container">
+      <div class="hud-label">EQUIPPED WEAPON</div>
+      <div id="hud-weapon-name">TACTICAL RIFLE</div>
+      <div id="hud-weapon-instructions">Press [1, 2, 3] to Switch</div>
+    </div>
+
+    <!-- Score/Kills counter -->
+    <div class="hud-element" id="hud-score-container">
+      <div class="hud-score-item">
+        <div class="hud-label">ELIMINATED</div>
+        <div id="hud-score-kills" class="hud-score-val">00</div>
+      </div>
+    </div>
+
+    <!-- Kill Log logs -->
+    <div class="hud-element" id="hud-logs-container"></div>
+
+    <!-- Perspective Toggle & Settings Button (Top Right next to logs) -->
+    <div class="hud-element" id="hud-controls-container" style="top: 30px; right: 300px; display: flex; gap: 10px;">
+      <button id="hud-pov-btn" style="background: rgba(18, 22, 28, 0.85); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 4px; padding: 6px 12px; color: #fff; font-family: 'Orbitron'; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;">🎥 3RD OTS</button>
+      <button id="hud-settings-btn" style="background: rgba(18, 22, 28, 0.85); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 4px; padding: 6px 12px; color: #fff; font-family: 'Orbitron'; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;">⚙️ SETTINGS</button>
+    </div>
+  </div>
+
+  <!-- Settings Modal (Lobby & In-Game) -->
+  <div id="settings-modal" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.65); backdrop-filter: blur(8px);">
+    <div class="instructions-box" style="width: 400px; max-width: 90%; background: var(--panel-bg); border: 1px solid var(--panel-border); padding: 30px; border-radius: 6px; position: relative;">
+      <h2 style="font-family: 'Orbitron'; color: var(--accent-tactical); margin-bottom: 20px; text-transform: uppercase;">Tactical Settings</h2>
+      
+      <div style="display: flex; flex-direction: column; gap: 20px; text-align: left; margin-bottom: 25px;">
+        <!-- Sensitivity Slider -->
+        <div>
+          <label for="setting-sensitivity" style="display: block; font-size: 0.75rem; font-weight: 800; margin-bottom: 6px; color: var(--accent-tactical);">Aim Sensitivity</label>
+          <div style="display: flex; align-items: center; gap: 15px;">
+            <input type="range" id="setting-sensitivity" min="0.1" max="3.0" step="0.1" value="1.0" style="flex-grow: 1; accent-color: var(--accent-tactical); cursor: pointer;">
+            <span id="setting-sensitivity-val" style="font-family: 'Orbitron'; font-weight: 700; width: 35px; text-align: right;">1.0</span>
+          </div>
+        </div>
+        
+        <!-- Default Perspective -->
+        <div>
+          <label style="display: block; font-size: 0.75rem; font-weight: 800; margin-bottom: 8px; color: var(--accent-tactical);">Default Perspective</label>
+          <div style="display: flex; gap: 10px; width: 100%;">
+            <label style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); padding: 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;" class="perspective-option active" data-perspective="third_person_behind">
+              <input type="radio" name="perspective-select" value="third_person_behind" checked style="display:none;">
+              3RD OTS
+            </label>
+            <label style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); padding: 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;" class="perspective-option" data-perspective="first_person">
+              <input type="radio" name="perspective-select" value="first_person" style="display:none;">
+              1ST PERSON
+            </label>
+            <label style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); padding: 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;" class="perspective-option" data-perspective="third_person_front">
+              <input type="radio" name="perspective-select" value="third_person_front" style="display:none;">
+              3RD FRONT
+            </label>
+          </div>
+        </div>
+        
+        <!-- Realtime Weather Selector -->
+        <div>
+          <label for="setting-weather" style="display: block; font-size: 0.75rem; font-weight: 800; margin-bottom: 6px; color: var(--accent-tactical);">Weather Environment</label>
+          <select id="setting-weather" style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; padding: 10px; color: #fff; font-family: 'Orbitron'; font-size: 0.8rem; cursor: pointer; outline: none; box-sizing: border-box;">
+            <option value="dynamic">Dynamic (Realtime Cycle)</option>
+            <option value="sunny">Sunny / Daylight</option>
+            <option value="cloudy">Cloudy / Foggy</option>
+            <option value="stormy">Stormy (Rain & Lightning)</option>
+          </select>
+        </div>
+      </div>
+      
+      <button id="settings-close-btn" style="width: 100%; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); border: none; padding: 12px; color: #fff; font-family: 'Orbitron'; font-weight: 800; font-size: 0.95rem; cursor: pointer; border-radius: 4px; text-transform: uppercase; box-shadow: 0 4px 10px rgba(234, 88, 12, 0.3);">Apply & Close</button>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
