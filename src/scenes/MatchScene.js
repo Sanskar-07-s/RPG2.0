@@ -814,6 +814,7 @@ export class MatchScene {
           this.cycleCameraMode();
         });
       }
+    }
   }
 
   /**
