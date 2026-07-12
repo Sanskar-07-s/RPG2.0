@@ -20,7 +20,8 @@ export class LobbyUI {
       selectedWeapon: 'pulse_rifle',
       settings: {
         sensitivity: 1.0,
-        perspective: 'third_person_behind'
+        perspective: 'third_person_behind',
+        brightness: 1000
       }
     };
 
@@ -128,12 +129,18 @@ export class LobbyUI {
       });
     });
 
-    // Settings: Weather dropdown listener
-    const weatherInput = document.getElementById('setting-weather');
-    if (weatherInput) {
-      this.state.settings.weather = 'dynamic'; // initial default
-      weatherInput.addEventListener('change', (e) => {
-        this.state.settings.weather = e.target.value;
+    // Settings: Brightness slider listener
+    const brightnessInput = document.getElementById('setting-brightness');
+    const brightnessVal = document.getElementById('setting-brightness-val');
+    if (brightnessInput && brightnessVal) {
+      brightnessInput.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        brightnessVal.innerText = val;
+        this.state.settings.brightness = val;
+        // Apply brightness to rotating operator turntable live
+        if (this.previewScene) {
+          this.previewScene.setBrightness(val);
+        }
       });
     }
 

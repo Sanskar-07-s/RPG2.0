@@ -64,13 +64,13 @@ export class LobbyPreviewScene {
    */
   initLights() {
     // Ambient filling
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
-    this.scene.add(ambientLight);
+    this.ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
+    this.scene.add(this.ambientLight);
 
     // Direct sun key light (Warm amber daylight)
-    const keyLight = new THREE.DirectionalLight(0xfff3e0, 1.1);
-    keyLight.position.set(3, 4, 4);
-    this.scene.add(keyLight);
+    this.keyLight = new THREE.DirectionalLight(0xfff3e0, 1.1);
+    this.keyLight.position.set(3, 4, 4);
+    this.scene.add(this.keyLight);
 
     // Back-left rim lighting (Cool steel blue highlight)
     this.rimLight = new THREE.DirectionalLight(0xdbeafe, 0.65);
@@ -222,5 +222,16 @@ export class LobbyPreviewScene {
 
     this.renderer.dispose();
     console.log("Lobby Preview Scene successfully disposed.");
+  }
+
+  /**
+   * Adjusts light intensities on the character turntable preview.
+   * @param {number} val - Brightness value from 10 to 2000
+   */
+  setBrightness(val) {
+    const mult = val / 1000;
+    if (this.ambientLight) this.ambientLight.intensity = 0.45 * mult;
+    if (this.keyLight) this.keyLight.intensity = 1.1 * mult;
+    if (this.rimLight) this.rimLight.intensity = 0.65 * mult;
   }
 }

@@ -36,21 +36,12 @@ export class MatchScene {
     this.cameraHeight = 1.6;
     this.cameraMode = (setupParams.settings && setupParams.settings.perspective) ? setupParams.settings.perspective : 'third_person_behind';
     this.sensitivityMultiplier = (setupParams.settings && setupParams.settings.sensitivity !== undefined) ? setupParams.settings.sensitivity : 1.0;
+    this.brightnessVal = (setupParams.settings && setupParams.settings.brightness !== undefined) ? setupParams.settings.brightness : 1000;
 
-    // Weather & Sky settings
-    this.weatherSetting = setupParams.settings ? setupParams.settings.weather || 'dynamic' : 'dynamic';
-    this.currentWeather = 'sunny';
-    this.weatherTimer = 0;
-    this.weatherDuration = 30.0; // seconds per weather cycle state
-    this.targetSkyColor = new THREE.Color(0x0a0c10);
-    this.targetFogColor = new THREE.Color(0x0e1117);
-    this.targetFogDensity = 0.012;
-    this.targetSunIntensity = 1.3;
-    this.targetSunColor = new THREE.Color(0xffedd5);
-    this.lightningFlash = 0.0;
-    this.lastLightningStrikeTime = 0;
-    this.lightningBoltMesh = null;
-    this.lightningLight = null;
+    // Mobile & Touch controls state
+    this.isMobile = ('ontouchstart' in window || navigator.maxTouchPoints > 0) && window.innerWidth < 1024;
+    this.joystickActive = false;
+    this.joystickVector = new THREE.Vector2(0, 0); // (x: left/right, y: forward/backward)
 
     // Input state
     this.keys = { w: false, a: false, s: false, d: false };
@@ -102,8 +93,8 @@ export class MatchScene {
     this.scene = new THREE.Scene();
     
     // Soft sky-blue fog and background
-    this.scene.background = new THREE.Color(0x0a0c10); 
-    this.scene.fog = new THREE.FogExp2(0x0e1117, 0.012); 
+    this.scene.background = new THREE.Color(0x7dd3fc); 
+    this.scene.fog = new THREE.FogExp2(0xa5f3fc, 0.004); 
 
     this.camera = new THREE.PerspectiveCamera(
       65,
@@ -126,14 +117,13 @@ export class MatchScene {
     window.addEventListener('resize', this.resizeHandler);
   }
 
-  /**
-   * Outdoor lighting: Sun + Ambient fill.
-   */
   initLights() {
-    const ambientLight = new THREE.AmbientLight(0x38475e, 1.4);
-    this.scene.add(ambientLight);
+    const mult = this.brightnessVal / 1000;
 
-    this.sunLight = new THREE.DirectionalLight(0xffedd5, 2.2);
+    this.ambientLight = new THREE.AmbientLight(0xf1f5f9, 1.8 * mult);
+    this.scene.add(this.ambientLight);
+
+    this.sunLight = new THREE.DirectionalLight(0xffffff, 3.0 * mult);
     this.sunLight.position.set(40, 80, 40);
     this.sunLight.castShadow = true;
     
@@ -431,32 +421,6 @@ export class MatchScene {
     const boundaryWire = new THREE.BoxHelper(new THREE.Mesh(boundaryGeo), 0xf97316);
     boundaryWire.position.y = 4;
     this.scene.add(boundaryWire);
-
-    // 3. Rain Particle System Setup
-    const rainCount = 1500;
-    const rainGeo = new THREE.BufferGeometry();
-    const rainPositions = new Float32Array(rainCount * 3);
-    
-    // Distribute rain randomly within a 40x20x40 box
-    for (let i = 0; i < rainCount * 3; i += 3) {
-      rainPositions[i] = (Math.random() - 0.5) * 40;     // x
-      rainPositions[i + 1] = Math.random() * 20;         // y
-      rainPositions[i + 2] = (Math.random() - 0.5) * 40; // z
-    }
-    
-    rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
-    
-    const rainMat = new THREE.PointsMaterial({
-      color: 0x93c5fd, // translucent blue-white
-      size: 0.08,
-      transparent: true,
-      opacity: 0.5,
-      depthWrite: false
-    });
-    
-    this.rainParticles = new THREE.Points(rainGeo, rainMat);
-    this.rainParticles.visible = false; // start hidden
-    this.scene.add(this.rainParticles);
   }
 
   /**
@@ -535,9 +499,15 @@ export class MatchScene {
    * Initialize keyboard/mouse controls and Pointer Lock API.
    */
   initControls() {
-    // Show blocker initially to prompt user click
-    if (this.blocker) {
-      this.blocker.style.display = 'flex';
+    // Show blocker initially to prompt user click (unless on mobile)
+    if (this.isMobile) {
+      const touchHud = document.getElementById('mobile-touch-hud');
+      if (touchHud) touchHud.style.display = 'block';
+      if (this.blocker) this.blocker.style.display = 'none';
+    } else {
+      if (this.blocker) {
+        this.blocker.style.display = 'flex';
+      }
     }
 
     // Key listeners (WASD + Arrows)
@@ -579,6 +549,7 @@ export class MatchScene {
 
     // Pointer lock binding (bind to both blocker and canvas to catch click events)
     const requestLock = () => {
+      if (this.isMobile) return;
       // Avoid locking cursor if settings menu overlay is displayed
       const isSettingsOpen = settingsModal && settingsModal.style.display === 'flex';
       if (!this.isPointerLocked && !isSettingsOpen) {
@@ -592,6 +563,7 @@ export class MatchScene {
     }
 
     document.addEventListener('pointerlockchange', () => {
+      if (this.isMobile) return;
       if (document.pointerLockElement === this.canvas) {
         this.isPointerLocked = true;
         this.blocker.style.display = 'none';
@@ -611,7 +583,7 @@ export class MatchScene {
 
     // Mouse movement -> Camera angles (respect sensitivity setting)
     document.addEventListener('mousemove', (e) => {
-      if (!this.isPointerLocked) return;
+      if (this.isMobile || !this.isPointerLocked) return;
 
       const sensitivity = 0.0022 * this.sensitivityMultiplier;
       this.cameraYaw -= e.movementX * sensitivity;
@@ -623,7 +595,8 @@ export class MatchScene {
 
     // Mouse click -> Firing
     document.addEventListener('mousedown', (e) => {
-      if (this.isPointerLocked && e.button === 0) {
+      if (this.isMobile || !this.isPointerLocked) return;
+      if (e.button === 0) {
         this.fireActiveWeapon();
       }
     });
@@ -673,13 +646,21 @@ export class MatchScene {
       });
     }
 
-    const weatherInput = document.getElementById('setting-weather');
-    if (weatherInput) {
-      weatherInput.value = this.weatherSetting;
-      weatherInput.addEventListener('change', (e) => {
-        this.weatherSetting = e.target.value;
-        this.weatherTimer = 0; // reset transition timers
-        this.addKillLog(`WEATHER CONFIG: ${e.target.value.toUpperCase()}`);
+    const brightnessInput = document.getElementById('setting-brightness');
+    const brightnessValText = document.getElementById('setting-brightness-val');
+    if (brightnessInput && brightnessValText) {
+      brightnessInput.value = this.brightnessVal;
+      brightnessValText.innerText = this.brightnessVal;
+
+      brightnessInput.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        brightnessValText.innerText = val;
+        this.brightnessVal = val;
+        
+        // Dynamically scale light intensities in real-time
+        const mult = val / 1000;
+        if (this.ambientLight) this.ambientLight.intensity = 1.8 * mult;
+        if (this.sunLight) this.sunLight.intensity = 3.0 * mult;
       });
     }
 
@@ -696,6 +677,147 @@ export class MatchScene {
         }
       });
     });
+
+    // Mobile touch control listeners
+    if (this.isMobile) {
+      const joystickContainer = document.getElementById('touch-joystick-container');
+      const joystickThumb = document.getElementById('joystick-thumb');
+
+      if (joystickContainer && joystickThumb) {
+        let joystickTouchId = null;
+        let startX = 0;
+        let startY = 0;
+        const maxDist = 50; // Max drag radius in pixels
+
+        joystickContainer.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          if (joystickTouchId !== null) return;
+
+          const touch = e.changedTouches[0];
+          joystickTouchId = touch.identifier;
+          this.joystickActive = true;
+
+          const rect = joystickContainer.getBoundingClientRect();
+          startX = rect.left + rect.width / 2;
+          startY = rect.top + rect.height / 2;
+        });
+
+        joystickContainer.addEventListener('touchmove', (e) => {
+          e.preventDefault();
+          if (joystickTouchId === null) return;
+
+          let activeTouch = null;
+          for (let i = 0; i < e.touches.length; i++) {
+            if (e.touches[i].identifier === joystickTouchId) {
+              activeTouch = e.touches[i];
+              break;
+            }
+          }
+
+          if (!activeTouch) return;
+
+          const dx = activeTouch.clientX - startX;
+          const dy = activeTouch.clientY - startY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          let finalX = dx;
+          let finalY = dy;
+          if (dist > maxDist) {
+            finalX = (dx / dist) * maxDist;
+            finalY = (dy / dist) * maxDist;
+          }
+
+          joystickThumb.style.transform = `translate(${finalX}px, ${finalY}px)`;
+
+          this.joystickVector.x = finalX / maxDist;
+          this.joystickVector.y = finalY / maxDist; // Positive goes down/backwards, negative goes up/forwards
+        });
+
+        const resetJoystick = (e) => {
+          if (joystickTouchId === null) return;
+
+          let touchEnded = false;
+          for (let i = 0; i < e.changedTouches.length; i++) {
+            if (e.changedTouches[i].identifier === joystickTouchId) {
+              touchEnded = true;
+              break;
+            }
+          }
+
+          if (touchEnded) {
+            joystickTouchId = null;
+            this.joystickActive = false;
+            this.joystickVector.set(0, 0);
+            joystickThumb.style.transform = 'translate(0px, 0px)';
+          }
+        };
+
+        joystickContainer.addEventListener('touchend', resetJoystick);
+        joystickContainer.addEventListener('touchcancel', resetJoystick);
+      }
+
+      const lookZone = document.getElementById('touch-look-zone');
+      if (lookZone) {
+        let lookTouchId = null;
+        let lastTouchX = 0;
+        let lastTouchY = 0;
+
+        lookZone.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          if (lookTouchId !== null) return;
+
+          const touch = e.changedTouches[0];
+          lookTouchId = touch.identifier;
+          lastTouchX = touch.clientX;
+          lastTouchY = touch.clientY;
+        });
+
+        lookZone.addEventListener('touchmove', (e) => {
+          e.preventDefault();
+          if (lookTouchId === null) return;
+
+          let activeTouch = null;
+          for (let i = 0; i < e.touches.length; i++) {
+            if (e.touches[i].identifier === lookTouchId) {
+              activeTouch = e.touches[i];
+              break;
+            }
+          }
+
+          if (!activeTouch) return;
+
+          const dx = activeTouch.clientX - lastTouchX;
+          const dy = activeTouch.clientY - lastTouchY;
+
+          const touchSensitivity = 0.0035 * this.sensitivityMultiplier;
+          this.cameraYaw -= dx * touchSensitivity;
+          this.cameraPitch -= dy * touchSensitivity;
+          this.cameraPitch = Math.max(-1.1, Math.min(0.35, this.cameraPitch));
+
+          lastTouchX = activeTouch.clientX;
+          lastTouchY = activeTouch.clientY;
+        });
+
+        const resetLook = (e) => {
+          if (lookTouchId === null) return;
+
+          let touchEnded = false;
+          for (let i = 0; i < e.changedTouches.length; i++) {
+            if (e.changedTouches[i].identifier === lookTouchId) {
+              touchEnded = true;
+              break;
+            }
+          }
+
+          if (touchEnded) {
+            lookTouchId = null;
+          }
+        };
+
+        lookZone.addEventListener('touchend', resetLook);
+        lookZone.addEventListener('touchcancel', resetLook);
+      }
+    }
   }
 
   /**
@@ -1055,24 +1177,34 @@ export class MatchScene {
    * Physics updates: move player and check collisions with boundaries/obstacles.
    */
   updatePlayerPhysics(delta) {
-    if (!this.isPointerLocked || this.playerHealth <= 0) return;
+    if ((!this.isPointerLocked && !this.isMobile) || this.playerHealth <= 0) return;
 
     // Movement Vectors relative to camera direction
     const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.cameraYaw);
     const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.cameraYaw);
     
     const moveDir = new THREE.Vector3();
-    if (this.keys.w) moveDir.add(forward);
-    if (this.keys.s) moveDir.add(forward.clone().negate());
-    if (this.keys.d) moveDir.add(right);
-    if (this.keys.a) moveDir.add(right.clone().negate());
+    let moveSpeedFactor = 1.0;
+
+    if (this.isMobile && this.joystickActive) {
+      moveDir.addScaledVector(forward, -this.joystickVector.y);
+      moveDir.addScaledVector(right, this.joystickVector.x);
+      
+      const magnitude = this.joystickVector.length();
+      moveSpeedFactor = Math.min(magnitude, 1.0);
+    } else {
+      if (this.keys.w) moveDir.add(forward);
+      if (this.keys.s) moveDir.add(forward.clone().negate());
+      if (this.keys.d) moveDir.add(right);
+      if (this.keys.a) moveDir.add(right.clone().negate());
+    }
 
     const isMoving = moveDir.lengthSq() > 0;
     if (isMoving) {
       moveDir.normalize();
       
       // Update target player velocities
-      this.playerVelocity.copy(moveDir.multiplyScalar(this.playerSpeed));
+      this.playerVelocity.copy(moveDir.multiplyScalar(this.playerSpeed * moveSpeedFactor));
       this.playerPos.addScaledVector(this.playerVelocity, delta);
       
       // Face movement direction ONLY when in front-facing camera POV
@@ -1246,175 +1378,7 @@ export class MatchScene {
     }
   }
 
-  /**
-   * Updates dynamic weather cycles, sky colors, fog densities, and lighting states.
-   */
-  updateWeatherSystem(time, delta) {
-    // 1. Cycle weather dynamically if configured to dynamic
-    if (this.weatherSetting === 'dynamic') {
-      this.weatherTimer += delta;
-      if (this.weatherTimer > this.weatherDuration) {
-        this.weatherTimer = 0;
-        
-        // Cycle states: sunny -> cloudy -> stormy -> sunny
-        if (this.currentWeather === 'sunny') {
-          this.currentWeather = 'cloudy';
-        } else if (this.currentWeather === 'cloudy') {
-          this.currentWeather = 'stormy';
-        } else {
-          this.currentWeather = 'sunny';
-        }
-        
-        this.addKillLog(`WEATHER INCOMING: ${this.currentWeather.toUpperCase()}`);
-      }
-    } else {
-      this.currentWeather = this.weatherSetting;
-    }
 
-    // 2. Set target weather colors & intensities
-    if (this.currentWeather === 'sunny') {
-      this.targetSkyColor.setHex(0x141b27); // slate-blue sky
-      this.targetFogColor.setHex(0x1a2130); // slate-grey fog
-      this.targetFogDensity = 0.010; // slightly thinner fog
-      this.targetSunIntensity = 2.2; // much brighter sunlight
-      this.targetSunColor.setHex(0xffedd5); // warm peach sun
-    } else if (this.currentWeather === 'cloudy') {
-      this.targetSkyColor.setHex(0x273549); // light slate cloudy sky
-      this.targetFogColor.setHex(0x2d3d54); // grey-blue fog
-      this.targetFogDensity = 0.020; // thinner fog for visibility
-      this.targetSunIntensity = 1.2; // brighter overcast
-      this.targetSunColor.setHex(0xabc0d4); // cool slate grey light
-    } else if (this.currentWeather === 'stormy') {
-      this.targetSkyColor.setHex(0x11151e); // dark storm slate sky
-      this.targetFogColor.setHex(0x151b26); // stormy fog
-      this.targetFogDensity = 0.030; // slightly thinner fog for better view
-      this.targetSunIntensity = 0.55; // brighter stormy sky
-      this.targetSunColor.setHex(0x505b70); // slate grey light
-    }
-
-    // 3. Smoothly interpolate (lerp) scene parameters
-    const lerpSpeed = 1.5 * delta;
-    this.scene.background.lerp(this.targetSkyColor, lerpSpeed);
-    this.scene.fog.color.lerp(this.targetFogColor, lerpSpeed);
-    
-    // Thicken/thin fog
-    this.scene.fog.density += (this.targetFogDensity - this.scene.fog.density) * lerpSpeed;
-    
-    // Adjust sun light intensity and colors
-    this.sunLight.intensity += (this.targetSunIntensity - this.sunLight.intensity) * lerpSpeed;
-    this.sunLight.color.lerp(this.targetSunColor, lerpSpeed);
-
-    // 4. Stormy lightning strike checks
-    if (this.currentWeather === 'stormy') {
-      const timeSinceLastStrike = time - this.lastLightningStrikeTime;
-      // Trigger lightning randomly (at least 6s apart, with ~0.4% chance per frame)
-      if (timeSinceLastStrike > 6.0 && Math.random() < 0.0045) {
-        this.triggerLightning(time);
-      }
-    }
-
-    // 5. Handle active lightning flash (boost fog/background brightness)
-    if (this.lightningFlash > 0) {
-      // Decay flash value
-      this.lightningFlash -= 3.5 * delta;
-      if (this.lightningFlash < 0) this.lightningFlash = 0;
-      
-      // Lerp sky background and fog colors to white-cyan
-      const flashColor = new THREE.Color(0xd0e8ff);
-      this.scene.background.lerp(flashColor, this.lightningFlash);
-      this.scene.fog.color.lerp(flashColor, this.lightningFlash);
-      
-      // Brighten sun temporarily
-      this.sunLight.intensity += this.lightningFlash * 6.0;
-    }
-  }
-
-  /**
-   * Spawns a procedural jagged lightning bolt mesh and triggers sky illumination.
-   * @param {number} time - Elapsed time in seconds
-   */
-  triggerLightning(time) {
-    this.lastLightningStrikeTime = time;
-    
-    // Strike point relative to player coordinates (within 50 units)
-    const offsetX = (Math.random() - 0.5) * 80;
-    const offsetZ = (Math.random() - 0.5) * 80;
-    const startX = this.playerPos.x + offsetX;
-    const startZ = this.playerPos.z + offsetZ;
-    
-    // Jagged lightning bolt mesh generation
-    const segments = 10;
-    const start = new THREE.Vector3(startX, 26, startZ);
-    const end = new THREE.Vector3(startX + (Math.random() - 0.5) * 15, 0, startZ + (Math.random() - 0.5) * 15);
-    
-    const points = [];
-    points.push(start.clone());
-    
-    // Generate intermediate jagged coordinates
-    for (let i = 1; i < segments; i++) {
-      const ratio = i / segments;
-      const mid = new THREE.Vector3().lerpVectors(start, end, ratio);
-      
-      // Add jagged offset noise perpendicular to falling direction
-      const noise = 2.4;
-      mid.x += (Math.random() - 0.5) * noise;
-      mid.z += (Math.random() - 0.5) * noise;
-      points.push(mid);
-    }
-    points.push(end.clone());
-    
-    // Construct Cylinder Segment meshes for the bolt
-    const boltGroup = new THREE.Group();
-    const boltMat = new THREE.MeshBasicMaterial({ color: 0x93c5fd, transparent: true, opacity: 0.95 });
-    
-    for (let i = 0; i < points.length - 1; i++) {
-      const p1 = points[i];
-      const p2 = points[i + 1];
-      const dist = p1.distanceTo(p2);
-      
-      // Thicker cylinders at top, tapering down
-      const radius = 0.12 * (1.0 - (i / segments) * 0.5);
-      const geom = new THREE.CylinderGeometry(radius, radius, dist, 4);
-      geom.rotateX(Math.PI / 2);
-      geom.translate(0, 0, dist / 2);
-      
-      const mesh = new THREE.Mesh(geom, boltMat);
-      mesh.position.copy(p1);
-      mesh.lookAt(p2);
-      boltGroup.add(mesh);
-    }
-    
-    this.scene.add(boltGroup);
-    this.lightningBoltMesh = boltGroup;
-    
-    // Trigger intense environment flash overlay
-    this.lightningFlash = 1.0;
-    this.addKillLog("⚡ ATMOSPHERIC LIGHTNING DETECTED");
-    
-    // Point light at strike impact site
-    const light = new THREE.PointLight(0xd0e8ff, 35, 70);
-    light.position.copy(end);
-    this.scene.add(light);
-    this.lightningLight = light;
-    
-    // Dispose resources after a brief visual delay (150ms)
-    setTimeout(() => {
-      if (this.lightningBoltMesh) {
-        this.scene.remove(this.lightningBoltMesh);
-        this.lightningBoltMesh.traverse((child) => {
-          if (child.isMesh) {
-            if (child.geometry) child.geometry.dispose();
-            if (child.material) child.material.dispose();
-          }
-        });
-        this.lightningBoltMesh = null;
-      }
-      if (this.lightningLight) {
-        this.scene.remove(this.lightningLight);
-        this.lightningLight = null;
-      }
-    }, 150);
-  }
 
   /**
    * AI patrol navigation + firing at player.
@@ -1569,35 +1533,6 @@ export class MatchScene {
         mesh.rotation.z = windSway;
       }
     });
-
-    // 4. Rain Particles simulation update (velocity falling & wrapping)
-    if (this.currentWeather === 'stormy') {
-      this.rainParticles.visible = true;
-      
-      const geom = this.rainParticles.geometry;
-      const positions = geom.attributes.position.array;
-      const count = positions.length;
-      
-      const fallSpeed = 16.0;
-      for (let i = 1; i < count; i += 3) {
-        positions[i] -= fallSpeed * delta; // falling down (y component)
-        
-        // Wrap back up if hitting ground
-        if (positions[i] < 0) {
-          positions[i] = 20.0 + Math.random() * 2;
-          // Randomize offset values
-          positions[i - 1] = (Math.random() - 0.5) * 40;
-          positions[i + 1] = (Math.random() - 0.5) * 40;
-        }
-      }
-      
-      geom.attributes.position.needsUpdate = true;
-      
-      // Center rain group in X/Z to follow player
-      this.rainParticles.position.set(this.playerPos.x, 0, this.playerPos.z);
-    } else {
-      this.rainParticles.visible = false;
-    }
   }
 
   /**
@@ -1614,7 +1549,6 @@ export class MatchScene {
     this.updatePlayerPhysics(delta);
     this.updateCamera();
     this.updateEnemies(time, delta);
-    this.updateWeatherSystem(time, delta);
     this.animateVFX(time, delta);
 
     this.renderer.render(this.scene, this.camera);
