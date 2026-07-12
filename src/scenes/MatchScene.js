@@ -39,7 +39,7 @@ export class MatchScene {
     this.brightnessVal = (setupParams.settings && setupParams.settings.brightness !== undefined) ? setupParams.settings.brightness : 1000;
 
     // Mobile & Touch controls state
-    this.isMobile = ('ontouchstart' in window || navigator.maxTouchPoints > 0) && window.innerWidth < 1024;
+    this.isMobile = window.innerWidth < 1024;
     this.joystickActive = false;
     this.joystickVector = new THREE.Vector2(0, 0); // (x: left/right, y: forward/backward)
 
@@ -687,37 +687,27 @@ export class MatchScene {
         let joystickTouchId = null;
         let startX = 0;
         let startY = 0;
-        const maxDist = 50; // Max drag radius in pixels
+        const maxDist = 50;
 
-        joystickContainer.addEventListener('touchstart', (e) => {
+        joystickContainer.addEventListener('pointerdown', (e) => {
           e.preventDefault();
           if (joystickTouchId !== null) return;
 
-          const touch = e.changedTouches[0];
-          joystickTouchId = touch.identifier;
+          joystickTouchId = e.pointerId;
           this.joystickActive = true;
 
           const rect = joystickContainer.getBoundingClientRect();
           startX = rect.left + rect.width / 2;
           startY = rect.top + rect.height / 2;
+          joystickContainer.setPointerCapture(e.pointerId);
         });
 
-        joystickContainer.addEventListener('touchmove', (e) => {
+        joystickContainer.addEventListener('pointermove', (e) => {
           e.preventDefault();
-          if (joystickTouchId === null) return;
+          if (joystickTouchId !== e.pointerId) return;
 
-          let activeTouch = null;
-          for (let i = 0; i < e.touches.length; i++) {
-            if (e.touches[i].identifier === joystickTouchId) {
-              activeTouch = e.touches[i];
-              break;
-            }
-          }
-
-          if (!activeTouch) return;
-
-          const dx = activeTouch.clientX - startX;
-          const dy = activeTouch.clientY - startY;
+          const dx = e.clientX - startX;
+          const dy = e.clientY - startY;
           const dist = Math.sqrt(dx * dx + dy * dy);
 
           let finalX = dx;
@@ -730,21 +720,11 @@ export class MatchScene {
           joystickThumb.style.transform = `translate(${finalX}px, ${finalY}px)`;
 
           this.joystickVector.x = finalX / maxDist;
-          this.joystickVector.y = finalY / maxDist; // Positive goes down/backwards, negative goes up/forwards
+          this.joystickVector.y = finalY / maxDist;
         });
 
         const resetJoystick = (e) => {
-          if (joystickTouchId === null) return;
-
-          let touchEnded = false;
-          for (let i = 0; i < e.changedTouches.length; i++) {
-            if (e.changedTouches[i].identifier === joystickTouchId) {
-              touchEnded = true;
-              break;
-            }
-          }
-
-          if (touchEnded) {
+          if (e.pointerId === joystickTouchId) {
             joystickTouchId = null;
             this.joystickActive = false;
             this.joystickVector.set(0, 0);
@@ -752,8 +732,8 @@ export class MatchScene {
           }
         };
 
-        joystickContainer.addEventListener('touchend', resetJoystick);
-        joystickContainer.addEventListener('touchcancel', resetJoystick);
+        joystickContainer.addEventListener('pointerup', resetJoystick);
+        joystickContainer.addEventListener('pointercancel', resetJoystick);
       }
 
       const lookZone = document.getElementById('touch-look-zone');
@@ -762,74 +742,55 @@ export class MatchScene {
         let lastTouchX = 0;
         let lastTouchY = 0;
 
-        lookZone.addEventListener('touchstart', (e) => {
+        lookZone.addEventListener('pointerdown', (e) => {
           e.preventDefault();
           if (lookTouchId !== null) return;
 
-          const touch = e.changedTouches[0];
-          lookTouchId = touch.identifier;
-          lastTouchX = touch.clientX;
-          lastTouchY = touch.clientY;
+          lookTouchId = e.pointerId;
+          lastTouchX = e.clientX;
+          lastTouchY = e.clientY;
+          lookZone.setPointerCapture(e.pointerId);
         });
 
-        lookZone.addEventListener('touchmove', (e) => {
+        lookZone.addEventListener('pointermove', (e) => {
           e.preventDefault();
-          if (lookTouchId === null) return;
+          if (lookTouchId !== e.pointerId) return;
 
-          let activeTouch = null;
-          for (let i = 0; i < e.touches.length; i++) {
-            if (e.touches[i].identifier === lookTouchId) {
-              activeTouch = e.touches[i];
-              break;
-            }
-          }
-
-          if (!activeTouch) return;
-
-          const dx = activeTouch.clientX - lastTouchX;
-          const dy = activeTouch.clientY - lastTouchY;
+          const dx = e.clientX - lastTouchX;
+          const dy = e.clientY - lastTouchY;
 
           const touchSensitivity = 0.0035 * this.sensitivityMultiplier;
           this.cameraYaw -= dx * touchSensitivity;
           this.cameraPitch -= dy * touchSensitivity;
           this.cameraPitch = Math.max(-1.1, Math.min(0.35, this.cameraPitch));
 
-          lastTouchX = activeTouch.clientX;
-          lastTouchY = activeTouch.clientY;
+          lastTouchX = e.clientX;
+          lastTouchY = e.clientY;
         });
 
         const resetLook = (e) => {
-          if (lookTouchId === null) return;
-
-          let touchEnded = false;
-          for (let i = 0; i < e.changedTouches.length; i++) {
-            if (e.changedTouches[i].identifier === lookTouchId) {
-              touchEnded = true;
-              break;
-            }
-          }
-
-          if (touchEnded) {
+          if (e.pointerId === lookTouchId) {
             lookTouchId = null;
           }
         };
 
-        lookZone.addEventListener('touchend', resetLook);
-        lookZone.addEventListener('touchcancel', resetLook);
+        lookZone.addEventListener('pointerup', resetLook);
+        lookZone.addEventListener('pointercancel', resetLook);
       }
 
       const fireBtn = document.getElementById('touch-fire-btn');
       if (fireBtn) {
-        fireBtn.addEventListener('touchstart', (e) => {
+        fireBtn.addEventListener('pointerdown', (e) => {
           e.preventDefault();
           this.touchFiring = true;
-          this.fireActiveWeapon(); // Fire immediately on tap
+          this.fireActiveWeapon();
+          fireBtn.setPointerCapture(e.pointerId);
         });
-        fireBtn.addEventListener('touchend', (e) => {
+        fireBtn.addEventListener('pointerup', (e) => {
           e.preventDefault();
           this.touchFiring = false;
         });
-        fireBtn.addEventListener('touchcancel', (e) => {
+        fireBtn.addEventListener('pointercancel', (e) => {
           e.preventDefault();
           this.touchFiring = false;
         });
@@ -837,7 +798,7 @@ export class MatchScene {
 
       const switchWeaponBtn = document.getElementById('touch-weapon-switch');
       if (switchWeaponBtn) {
-        switchWeaponBtn.addEventListener('touchstart', (e) => {
+        switchWeaponBtn.addEventListener('pointerdown', (e) => {
           e.preventDefault();
           const keys = Object.keys(this.weaponConfigs);
           const currentIndex = keys.indexOf(this.selectedWeapon);
@@ -848,12 +809,11 @@ export class MatchScene {
 
       const switchPovBtn = document.getElementById('touch-pov-btn');
       if (switchPovBtn) {
-        switchPovBtn.addEventListener('touchstart', (e) => {
+        switchPovBtn.addEventListener('pointerdown', (e) => {
           e.preventDefault();
           this.cycleCameraMode();
         });
       }
-    }
   }
 
   /**
@@ -1155,6 +1115,12 @@ export class MatchScene {
     if (this.hudWeaponName) {
       const config = this.weaponConfigs[this.selectedWeapon];
       this.hudWeaponName.innerText = config ? config.name : 'Unknown';
+    }
+    const touchWeaponLabel = document.getElementById('touch-weapon-label');
+    if (touchWeaponLabel) {
+      const config = this.weaponConfigs[this.selectedWeapon];
+      const abbrev = config ? config.name.split(' ').map(w => w[0]).join('') : 'NXT';
+      touchWeaponLabel.innerText = abbrev;
     }
 
     // 3. Kills
