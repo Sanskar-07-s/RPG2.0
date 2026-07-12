@@ -818,8 +818,8 @@
       background: var(--accent-tactical);
     }
 
-    /* Settings perspective options active state */
-    .perspective-option.active {
+    /* Settings perspective and graphics options active state */
+    .perspective-option.active, .graphics-option.active {
       border-color: var(--accent-tactical) !important;
       background: rgba(249, 115, 22, 0.15) !important;
       color: var(--accent-tactical) !important;
@@ -1350,6 +1350,29 @@
           <div style="display: flex; align-items: center; gap: 15px;">
             <input type="range" id="setting-brightness" min="10" max="2000" step="10" value="1000" style="flex-grow: 1; accent-color: var(--accent-tactical); cursor: pointer;">
             <span id="setting-brightness-val" style="font-family: 'Orbitron'; font-weight: 700; width: 45px; text-align: right;">1000</span>
+          </div>
+        </div>
+
+        <!-- Graphics Quality -->
+        <div>
+          <label style="display: block; font-size: 0.75rem; font-weight: 800; margin-bottom: 8px; color: var(--accent-tactical);">Graphics Quality (Requires restart)</label>
+          <div style="display: flex; gap: 10px; width: 100%;">
+            <label style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;" class="graphics-option active">
+              <input type="radio" name="graphics-select" value="auto" checked style="display:none;">
+              AUTO
+            </label>
+            <label style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;" class="graphics-option">
+              <input type="radio" name="graphics-select" value="low" style="display:none;">
+              LOW
+            </label>
+            <label style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;" class="graphics-option">
+              <input type="radio" name="graphics-select" value="medium" style="display:none;">
+              MED
+            </label>
+            <label style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;" class="graphics-option">
+              <input type="radio" name="graphics-select" value="high" style="display:none;">
+              HIGH
+            </label>
           </div>
         </div>
       </div>

@@ -21,7 +21,8 @@ export class LobbyUI {
       settings: {
         sensitivity: 1.0,
         perspective: 'third_person_behind',
-        brightness: 1000
+        brightness: 1000,
+        graphics: 'auto'
       }
     };
 
@@ -49,6 +50,7 @@ export class LobbyUI {
     this.sensitivityInput = document.getElementById('setting-sensitivity');
     this.sensitivityVal = document.getElementById('setting-sensitivity-val');
     this.perspectiveOptions = document.querySelectorAll('.perspective-option');
+    this.graphicsOptions = document.querySelectorAll('.graphics-option');
 
     // 1. Initialize the 3D turntable scene
     this.previewScene = new LobbyPreviewScene(this.previewCanvas);
@@ -141,6 +143,22 @@ export class LobbyUI {
         if (this.previewScene) {
           this.previewScene.setBrightness(val);
         }
+      });
+    }
+
+    // Settings: Graphics Quality toggle buttons
+    if (this.graphicsOptions) {
+      this.graphicsOptions.forEach((option) => {
+        option.addEventListener('click', () => {
+          this.graphicsOptions.forEach((opt) => opt.classList.remove('active'));
+          option.classList.add('active');
+
+          const radio = option.querySelector('input[type="radio"]');
+          if (radio) {
+            radio.checked = true;
+            this.state.settings.graphics = radio.value;
+          }
+        });
       });
     }
 

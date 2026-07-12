@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CharacterModel } from '../entities/CharacterModel.js';
+import { Sky } from 'three/addons/objects/Sky.js';
 
 /**
  * MatchScene class.
@@ -36,10 +37,32 @@ export class MatchScene {
     this.cameraHeight = 1.6;
     this.cameraMode = (setupParams.settings && setupParams.settings.perspective) ? setupParams.settings.perspective : 'third_person_behind';
     this.sensitivityMultiplier = (setupParams.settings && setupParams.settings.sensitivity !== undefined) ? setupParams.settings.sensitivity : 1.0;
+    
     this.brightnessVal = (setupParams.settings && setupParams.settings.brightness !== undefined) ? setupParams.settings.brightness : 1000;
-
-    // Mobile & Touch controls state
+    
+    // Graphics Scalability Engine
     this.isMobile = window.innerWidth < 1024;
+    let quality = (setupParams.settings && setupParams.settings.graphics) ? setupParams.settings.graphics : 'auto';
+    if (quality === 'auto') quality = this.isMobile ? 'low' : 'high';
+    this.graphicsQuality = quality;
+
+    if (quality === 'low') {
+      this.pixelRatio = 1.0;
+      this.shadowMapRes = 1024;
+      this.terrainSegments = 20;
+      this.sceneryCount = 80;
+    } else if (quality === 'medium') {
+      this.pixelRatio = Math.min(window.devicePixelRatio, 1.5);
+      this.shadowMapRes = 2048;
+      this.terrainSegments = 50;
+      this.sceneryCount = 180;
+    } else {
+      this.pixelRatio = Math.min(window.devicePixelRatio, 2.0);
+      this.shadowMapRes = 4096;
+      this.terrainSegments = 80;
+      this.sceneryCount = 300;
+    }
+
     this.joystickActive = false;
     this.joystickVector = new THREE.Vector2(0, 0); // (x: left/right, y: forward/backward)
 
@@ -86,6 +109,17 @@ export class MatchScene {
     this.start();
   }
 
+  
+  getTerrainHeight(x, z) {
+    let height = Math.sin(x * 0.05) * Math.cos(z * 0.05) * 2.0;
+    height += Math.sin(x * 0.02) * Math.cos(z * 0.025) * 4.0;
+    const distFromCenter = Math.sqrt(x*x + z*z);
+    if (distFromCenter < 20) {
+      height *= (distFromCenter / 20); // ease into hills from spawn
+    }
+    return height;
+  }
+
   /**
    * Setup WebGL Renderer, Scene, Camera, and Fog.
    */
@@ -93,8 +127,22 @@ export class MatchScene {
     this.scene = new THREE.Scene();
     
     // Soft sky-blue fog and background
-    this.scene.background = new THREE.Color(0x7dd3fc); 
-    this.scene.fog = new THREE.FogExp2(0xa5f3fc, 0.004); 
+    
+    // Realistic Sky
+    this.sky = new Sky();
+    this.sky.scale.setScalar(450000);
+    this.scene.add(this.sky);
+    
+    this.sunPosition = new THREE.Vector3();
+    
+    const skyUniforms = this.sky.material.uniforms;
+    skyUniforms['turbidity'].value = 10;
+    skyUniforms['rayleigh'].value = 2;
+    skyUniforms['mieCoefficient'].value = 0.005;
+    skyUniforms['mieDirectionalG'].value = 0.8;
+
+    this.scene.fog = new THREE.FogExp2(0xa5f3fc, 0.0035);
+ 
 
     this.camera = new THREE.PerspectiveCamera(
       65,
@@ -109,7 +157,7 @@ export class MatchScene {
       powerPreference: 'high-performance'
     });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(this.pixelRatio);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -128,8 +176,8 @@ export class MatchScene {
     this.sunLight.castShadow = true;
     
     // Setup clean shadows for large map
-    this.sunLight.shadow.mapSize.width = 2048;
-    this.sunLight.shadow.mapSize.height = 2048;
+    this.sunLight.shadow.mapSize.width = this.shadowMapRes;
+    this.sunLight.shadow.mapSize.height = this.shadowMapRes;
     this.sunLight.shadow.camera.near = 0.5;
     this.sunLight.shadow.camera.far = 200;
     this.sunLight.shadow.camera.left = -60;
@@ -138,6 +186,17 @@ export class MatchScene {
     this.sunLight.shadow.camera.bottom = -60;
     this.sunLight.shadow.bias = -0.0005;
     this.scene.add(this.sunLight);
+    
+    // Sync Sky with Sun position based on brightness
+    const elevation = 2 + (this.brightnessVal / 2000) * 88; // 2 to 90 degrees
+    const azimuth = 180;
+    const phi = THREE.MathUtils.degToRad(90 - elevation);
+    const theta = THREE.MathUtils.degToRad(azimuth);
+    this.sunPosition.setFromSphericalCoords(1, phi, theta);
+    
+    this.sky.material.uniforms['sunPosition'].value.copy(this.sunPosition);
+    this.sunLight.position.copy(this.sunPosition).multiplyScalar(100);
+
   }
 
   /**
@@ -294,9 +353,20 @@ export class MatchScene {
    */
   initEnvironment() {
     // 1. Terrain Ground plane scaled to 200x200
-    const groundGeo = new THREE.PlaneGeometry(220, 220, 40, 40);
+    
+    const groundGeo = new THREE.PlaneGeometry(250, 250, this.terrainSegments, this.terrainSegments);
     const count = groundGeo.attributes.position.count;
     const colors = [];
+    
+    // Displace vertices to create rolling hills
+    const pos = groundGeo.attributes.position;
+    for (let i = 0; i < count; i++) {
+      const vx = pos.getX(i);
+      const vy = pos.getY(i);
+      pos.setZ(i, this.getTerrainHeight(vx, vy));
+    }
+    groundGeo.computeVertexNormals();
+
     const color = new THREE.Color();
     
     for (let i = 0; i < count; i++) {
@@ -350,7 +420,7 @@ export class MatchScene {
 
     // Populate scenery points procedurally across the 200x200 map
     // Keep spawn zone at (0, 0) clean (within 12 units)
-    const billboardCount = 240;
+    const billboardCount = this.sceneryCount;
     for (let i = 0; i < billboardCount; i++) {
       let x = (Math.random() - 0.5) * 190;
       let z = (Math.random() - 0.5) * 190;
@@ -399,7 +469,7 @@ export class MatchScene {
         mesh = new THREE.Mesh(geo, stoneMat);
       }
 
-      mesh.position.set(x, 0, z);
+      mesh.position.set(x, this.getTerrainHeight(x, z), z);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
 
@@ -1243,6 +1313,8 @@ export class MatchScene {
     });
 
     // Update 3D player mesh coordinates
+    
+    this.playerPos.y = this.getTerrainHeight(this.playerPos.x, this.playerPos.z);
     this.playerCharacter.position.copy(this.playerPos);
     
     // Log player position to console each frame temporarily
