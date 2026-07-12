@@ -835,7 +835,7 @@ export class MatchScene {
         });
       }
 
-      const switchWeaponBtn = document.getElementById('touch-switch-weapon-btn');
+      const switchWeaponBtn = document.getElementById('touch-weapon-switch');
       if (switchWeaponBtn) {
         switchWeaponBtn.addEventListener('touchstart', (e) => {
           e.preventDefault();
@@ -846,7 +846,7 @@ export class MatchScene {
         });
       }
 
-      const switchPovBtn = document.getElementById('touch-switch-pov-btn');
+      const switchPovBtn = document.getElementById('touch-pov-btn');
       if (switchPovBtn) {
         switchPovBtn.addEventListener('touchstart', (e) => {
           e.preventDefault();
